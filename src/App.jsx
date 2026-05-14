@@ -31,10 +31,10 @@ function Layout() {
   const location = useLocation();
 
   // Rutas donde NO se debe mostrar el Navbar
-  const noNavbarRoutes = ["/", "/WelcomeScreen", "/login", "/register", "/ModuloInfo", "/soporte"];
+  const noNavbarRoutes = ["/", "/WelcomeScreen", "/login", "/register", "/ModuloInfo", "/soporte","/PricingScreen", "/SelectProfile"];
 
    // Rutas donde NO se debe mostrar el Chatbot
-  const noChatbotRoutes = ["/", "/login", "/register"];
+  const noChatbotRoutes = ["/", "/login", "/register", "/PricingScreen"];
 
 
   return (

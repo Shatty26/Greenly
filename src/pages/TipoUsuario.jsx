@@ -5,78 +5,148 @@ export default function TipoUsuario() {
   const navigate = useNavigate();
 
   const elegirUsuario = () => {
-    localStorage.setItem("tipoCuenta", "user");
+    localStorage.setItem("tipoCuenta", "usuario");
     navigate("/WelcomeScreen");
   };
 
   const elegirEmpresa = () => {
-    localStorage.setItem("tipoCuenta", "business");
+    localStorage.setItem("tipoCuenta", "empresa");
     navigate("/PricingScreen");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-50 flex items-center justify-center px-6">
-      <div className="text-center">
-        <h1 className="text-5xl font-bold text-green-700 mb-4">
-          Choose Account Type
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(to bottom right, #dcfce7, white, #f0fdf4)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "24px",
+        fontFamily: "Poppins, sans-serif",
+      }}
+    >
+      <div style={{ textAlign: "center" }}>
+
+        <h1
+          style={{
+            fontSize: "48px",
+            fontWeight: "bold",
+            color: "#15803d",
+            marginBottom: "16px",
+          }}
+        >
+          Elegir Tipo de Cuenta
         </h1>
 
-        <p className="text-gray-600 text-lg mb-14">
-          Select how you want to continue
+        <p
+          style={{
+            color: "#4b5563",
+            fontSize: "20px",
+            marginBottom: "56px",
+          }}
+        >
+          Selecciona cómo deseas continuar
         </p>
 
-        <div className="flex flex-col md:flex-row gap-12 items-center justify-center">
-          {/* Usuario normal */}
+        <div
+          style={{
+            display: "flex",
+            gap: "48px",
+            justifyContent: "center",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+
+          {/* Usuario */}
           <button
             onClick={elegirUsuario}
-            className="
-              w-64 h-64
-              rounded-full
-              bg-white
-              shadow-2xl
-              border-4 border-green-200
-              hover:scale-105
-              hover:bg-green-50
-              transition-all duration-300
-              flex flex-col items-center justify-center
-            "
+            style={{
+              width: "260px",
+              height: "260px",
+              borderRadius: "999px",
+              backgroundColor: "white",
+              border: "4px solid #bbf7d0",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              cursor: "pointer",
+              transition: "0.3s",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            <div className="text-6xl mb-4">👤</div>
+            <div style={{ fontSize: "64px", marginBottom: "16px" }}>
+              👤
+            </div>
 
-            <h2 className="text-2xl font-bold text-green-700">
-              User
+            <h2
+              style={{
+                fontSize: "28px",
+                fontWeight: "bold",
+                color: "#15803d",
+              }}
+            >
+              Usuario
             </h2>
 
-            <p className="text-gray-500 mt-2 px-6 text-sm">
-              Continue as a normal user
+            <p
+              style={{
+                color: "#6b7280",
+                marginTop: "10px",
+                padding: "0 20px",
+                fontSize: "14px",
+              }}
+            >
+              Continuar como usuario normal
             </p>
           </button>
 
           {/* Empresa */}
           <button
             onClick={elegirEmpresa}
-            className="
-              w-64 h-64
-              rounded-full
-              bg-green-600
-              shadow-2xl
-              border-4 border-green-300
-              hover:scale-105
-              hover:bg-green-700
-              transition-all duration-300
-              flex flex-col items-center justify-center
-            "
+            style={{
+              width: "260px",
+              height: "260px",
+              borderRadius: "999px",
+              backgroundColor: "#16a34a",
+              border: "4px solid #86efac",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              cursor: "pointer",
+              transition: "0.3s",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            <div className="text-6xl mb-4">🏢</div>
+            <div style={{ fontSize: "64px", marginBottom: "16px" }}>
+              🏢
+            </div>
 
-            <h2 className="text-2xl font-bold text-white">
-              Business
+            <h2
+              style={{
+                fontSize: "28px",
+                fontWeight: "bold",
+                color: "white",
+              }}
+            >
+              Empresa
             </h2>
 
-            <p className="text-green-100 mt-2 px-6 text-sm">
-              Continue as a company
+            <p
+              style={{
+                color: "#dcfce7",
+                marginTop: "10px",
+                padding: "0 20px",
+                fontSize: "14px",
+              }}
+            >
+              Continuar como empresa
             </p>
           </button>
+
         </div>
       </div>
     </div>
