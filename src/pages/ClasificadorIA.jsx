@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import * as tmImage from '@teachablemachine/image';
 
 const ClasificadorIA = () => {
   const [model, setModel] = useState(null);
@@ -11,6 +9,7 @@ const ClasificadorIA = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
 
   const webcamContainerRef = useRef(null);
+  const tmImageRef = useRef(null);
   const URL_MODEL = "https://teachablemachine.withgoogle.com/models/R-u08slDC/";
 
   const wasteData = {
@@ -60,6 +59,13 @@ const ClasificadorIA = () => {
   const initCamera = async () => {
     showOverlay("INICIANDO IA", true, async () => {
       try {
+        // Load heavy browser-only libraries dynamically to avoid bundling at build time
+        if (!tmImageRef.current) {
+          await import('@tensorflow/tfjs');
+          tmImageRef.current = await import('@teachablemachine/image');
+        }
+        const tmImage = tmImageRef.current;
+
         let loadedModel = model;
         if (!loadedModel) {
           // Cargando modelo desde la URL de Teachable Machine
