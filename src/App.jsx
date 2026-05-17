@@ -9,29 +9,30 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import ModuloInfo from "./pages/ModuloInfo";
+import RecuperarPassword from "./pages/RecuperarPassword";
 import Chatbot from "./pages/Chatbot";
 import ClasificadorIA from "./pages/ClasificadorIA";
 import Retos from "./pages/Retos";
 import Calculadora from "./pages/Calculadora";
 import Calcu1 from "./pages/Calcu1";
 import Perfil from "./pages/Perfil";
+import EditarPerfil from "./pages/EditarPerfil";
 import Soporte from "./pages/Soporte";
-import DashboardBusiness from "./pages/DashboardBusiness";
-import LoginBusiness from "./pages/LoginCompany";
-import RegisterBusiness from "./pages/RegisterEmploee";
+import LoginCompany from "./pages/LoginCompany";
+import CompanyRegister from "./pages/CompanyRegister";
+import RegisterEmploee from "./pages/RegisterEmploee";
+import EmployeeLogin from "./pages/EmployeeLogin";
 import TipoUsuario from "./pages/TipoUsuario";
 import WelcomeBusiness from "./pages/WelcomeBusiness";
 import SelectProfile from "./pages/SelectProfile";
-import EmployeeLogin from "./pages/EmployeeLogin";
-import CompanyRegister from "./pages/CompanyRegister";
 import PricingScreen from "./pages/PricingScreen"
-import DondeReciclar from "./pages/DondeReciclar"; 
+import DondeReciclar from "./pages/DondeReciclar"
 
 function Layout() {
   const location = useLocation();
 
   // Rutas donde NO se debe mostrar el Navbar
-  const noNavbarRoutes = ["/", "/WelcomeScreen", "/login", "/register", "/ModuloInfo", "/soporte","/PricingScreen", "/SelectProfile"];
+  const noNavbarRoutes = ["/", "/WelcomeScreen", "/login", "/register", "/ModuloInfo", "/soporte","/PricingScreen", "/SelectProfile", "/EmployeeLogin", "/RegisterEmploee", "/LoginCompany", "/WelcomeBusiness","/RecuperarPassword"];
 
    // Rutas donde NO se debe mostrar el Chatbot
   const noChatbotRoutes = ["/", "/login", "/register", "/PricingScreen"];
@@ -52,20 +53,21 @@ function Layout() {
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/moduloinfo" element={<ModuloInfo />} />
+        <Route path="/recuperarpassword" element={<RecuperarPassword />} />
         <Route path="/calcu1" element={<Calcu1 />} />
         <Route path="/calculadora" element={<Calculadora />} />
         <Route path="/clasificadoria" element={<ClasificadorIA />} />
         <Route path="/retos" element={<Retos />} />
         <Route path="/soporte" element={<Soporte />} />
-        <Route path="/loginbusiness" element={<LoginBusiness />} />
-        <Route path="/registerbusiness" element={<RegisterBusiness />} />
-        <Route path="/dashboardbusiness" element={<DashboardBusiness />} />
-        <Route path="/welcomebusiness" element={<WelcomeBusiness />} />
+        <Route path="/logincompany" element={<LoginCompany />} />
+        <Route path="/companyregister" element={<CompanyRegister/>} />
+        <Route path="/welcomecompany" element={<WelcomeBusiness />} />
         <Route path="/selectprofile" element={<SelectProfile />} />
         <Route path="/employee" element={<EmployeeLogin />} />
-        <Route path="/companyregister" element={<CompanyRegister />} />
+        <Route path="/registeremploee" element={<RegisterEmploee />} />
         <Route path="/pricingscreen" element={<PricingScreen />} />
         <Route path="/dondereciclar" element={<DondeReciclar />} />
+        <Route path="/editarperfil" element={<EditarPerfil />} />
 
       </Routes>
     </>

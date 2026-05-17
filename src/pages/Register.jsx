@@ -15,13 +15,15 @@ function Register() {
   const handleRegister = (e) => {
   e.preventDefault();
 
-  if (nombre.trim() === "" || email.trim() === "" || password.trim() === "") {
-    alert("Por favor complete todos los campos");
+  if (
+    nombre.trim() === "" ||
+    email.trim() === "" ||
+    password.trim() === ""
+  ) {
     return;
   }
 
   if (password.length < 8) {
-    alert("La contraseña tiene que tener almenos 8 caracteres");
     return;
   }
 
@@ -29,7 +31,7 @@ function Register() {
     .then((userCredential) => {
       const user = userCredential.user;
 
-      //Guardar nombre en localStorage
+      // Guardar nombre en localStorage
       localStorage.setItem("username", nombre);
 
       return addDoc(collection(db, "usuarios"), {
@@ -40,9 +42,7 @@ function Register() {
       });
     })
     .then(() => {
-      alert("¡Registro exitoso! ¡Te damos la bienvenida a salvar el mundo!");
-
-      //limpiar inputs
+      // limpiar inputs
       setNombre("");
       setEmail("");
       setPassword("");
@@ -50,7 +50,7 @@ function Register() {
       navigate("/home");
     })
     .catch((error) => {
-      alert("Error: " + error.message);
+      console.log(error.message);
     });
 };
 

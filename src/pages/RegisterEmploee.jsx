@@ -6,7 +6,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 
-export default function RegisterBusiness() {
+export default function RegisterEmployee() {
   const [nombreEmpresa, setNombreEmpresa] = useState("");
   const [tipoEmpresa, setTipoEmpresa] = useState("");
   const [telefono, setTelefono] = useState("");

@@ -10,23 +10,21 @@ function Login() {
 
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
+ const handleLogin = (e) => {
+  e.preventDefault();
+{/* Validación básica la logica tras el login*/}
+  if (email.trim() === "" || password.trim() === "") {
+    return;
+  }
 
-    if (email.trim() === "" || password.trim() === "") {
-      alert("Por favor complete todos los campos");
-      return;
-    }
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        alert("¡Bienvenido de nuevo! Sesión iniciada");
-        navigate("/home");
-      })
-      .catch((error) => {
-        alert("Error: " + error.message + " - Intenta de nuevo!");
-      });
-  };
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      navigate("/home");
+    })
+    .catch((error) => {
+      console.log(error.message);
+    });
+};
 
   return (
     <div className="min-h-screen bg-white font-[Poppins] relative overflow-hidden">
@@ -154,6 +152,13 @@ function Login() {
               </button>
             </div>
 
+                      {/* OLVIDÉ MI CONTRASEÑA */}
+        <p
+            onClick={() => navigate("/RecuperarPassword")}
+            className="text-right text-sm text-green-800 font-semibold cursor-pointer hover:underline-mt-2 ">
+            ¿Olvidaste tu contraseña?
+        </p>
+
             {/* Button */}
             <button
               type="submit"
@@ -167,6 +172,7 @@ function Login() {
             >
               Iniciar Sesión
             </button>
+        
           </form>
         </div>
       </div>

@@ -12,6 +12,21 @@ export default function PantallaPrecios() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ecfff1] via-[#dfffe7] to-[#c8ffd8] overflow-hidden relative">
 
+      {/* Retroceder */}
+      <button
+        onClick={() => navigate(-1)}
+        className="
+          absolute top-6 left-6 
+          w-12 h-12 
+          flex items-center justify-center 
+          rounded-full bg-white/80 shadow-md 
+          hover:bg-green transition
+          z-30
+        "
+      >
+        <span className="text-xl font-black text-green-900">←</span>
+      </button>
+
       {/* Fondos decorativos */}
       <div className="absolute top-[-100px] left-[-80px] w-72 h-72 bg-green-300 rounded-full blur-3xl opacity-30"></div>
 
@@ -20,16 +35,13 @@ export default function PantallaPrecios() {
       {/* Contenedor principal */}
       <div className="relative z-10 px-4 py-8 sm:px-6 md:px-10">
 
-        {/* Navbar */}
-        <div className="flex items-center justify-between mb-12">
-
-          <div className="flex items-center gap-2">
-            <Leaf className="text-green-700" size={34} />
-
-            <h1 className="text-3xl font-black text-green-950">
-              
-            </h1>
-          </div>
+        {/* Logo*/}
+        <div>
+          <img
+            src="/img/greenly-logo.png"
+            alt="Greenly Logo"
+            className="w-[250px] mb-2 md:w-[250px]"
+          />
         </div>
 
         {/* Encabezado */}
@@ -79,7 +91,7 @@ export default function PantallaPrecios() {
                 </div>
 
                 <p className="text-white text-base sm:text-lg leading-relaxed">
-                  Huella de carbono básica
+                  Calculadora de huella de carbono
                 </p>
 
               </div>
@@ -103,7 +115,31 @@ export default function PantallaPrecios() {
                 </div>
 
                 <p className="text-white text-base sm:text-lg leading-relaxed">
-                  Acceso a la comunidad
+                  Clasificador de Residuos
+                </p>
+
+              </div>
+
+              <div className="flex items-start gap-4">
+
+                <div className="min-w-[32px] min-h-[32px] bg-lime-300 rounded-full flex items-center justify-center mt-1">
+                  <Check size={18} className="text-green-950" />
+                </div>
+
+                <p className="text-white text-base sm:text-lg leading-relaxed">
+                  Recomendaciones de lugares donde puedes reciclar
+                </p>
+
+              </div>
+
+              <div className="flex items-start gap-4">
+
+                <div className="min-w-[32px] min-h-[32px] bg-lime-300 rounded-full flex items-center justify-center mt-1">
+                  <Check size={18} className="text-green-950" />
+                </div>
+
+                <p className="text-white text-base sm:text-lg leading-relaxed">
+                  Chat bot
                 </p>
 
               </div>
@@ -124,11 +160,6 @@ export default function PantallaPrecios() {
           {/* CARD PREMIUM */}
           {/* ===================== */}
           <div className="relative w-full max-w-sm rounded-[35px] p-6 sm:p-8 transition-all duration-300 hover:scale-105 shadow-2xl bg-gradient-to-br from-green-700 to-emerald-900 border-4 border-lime-300">
-
-            {/* Badge */}
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-lime-300 text-green-950 font-bold px-6 py-2 rounded-full shadow-lg text-sm sm:text-base">
-              Recomendado
-            </div>
 
             {/* Título */}
             <div className="text-center mb-8">
@@ -153,7 +184,7 @@ export default function PantallaPrecios() {
                 </div>
 
                 <p className="text-white text-base sm:text-lg leading-relaxed">
-                  Clasificador ilimitado
+                  Calculadora de huella de carbono avanzada
                 </p>
 
               </div>
@@ -177,7 +208,31 @@ export default function PantallaPrecios() {
                 </div>
 
                 <p className="text-white text-base sm:text-lg leading-relaxed">
-                  Consejos personalizados
+                  Consejos y Retos personalizados
+                </p>
+
+              </div>
+
+              <div className="flex items-start gap-4">
+
+                <div className="min-w-[32px] min-h-[32px] bg-lime-300 rounded-full flex items-center justify-center mt-1">
+                  <Check size={18} className="text-green-950" />
+                </div>
+
+                <p className="text-white text-base sm:text-lg leading-relaxed">
+                  Reportes estadisticos de empleados
+                </p>
+
+              </div>
+
+              <div className="flex items-start gap-4">
+
+                <div className="min-w-[32px] min-h-[32px] bg-lime-300 rounded-full flex items-center justify-center mt-1">
+                  <Check size={18} className="text-green-950" />
+                </div>
+
+                <p className="text-white text-base sm:text-lg leading-relaxed">
+                  Registro de empleados max 20
                 </p>
 
               </div>
@@ -222,7 +277,7 @@ export default function PantallaPrecios() {
                 </div>
 
                 <p className="text-white text-base sm:text-lg leading-relaxed">
-                  Todas las funciones premium
+                  Todo lo del plan Green Mensual
                 </p>
 
               </div>
@@ -234,7 +289,7 @@ export default function PantallaPrecios() {
                 </div>
 
                 <p className="text-white text-base sm:text-lg leading-relaxed">
-                  Estadísticas avanzadas
+                  Estadísticas comparativas anuales
                 </p>
 
               </div>
@@ -246,7 +301,31 @@ export default function PantallaPrecios() {
                 </div>
 
                 <p className="text-white text-base sm:text-lg leading-relaxed">
-                  Soporte prioritario
+                  Consejos, Retos y Recomendaciones personalizadas
+                </p>
+
+              </div>
+
+              <div className="flex items-start gap-4">
+
+                <div className="min-w-[32px] min-h-[32px] bg-lime-300 rounded-full flex items-center justify-center mt-1">
+                  <Check size={18} className="text-green-950" />
+                </div>
+
+                <p className="text-white text-base sm:text-lg leading-relaxed">
+                  Reporte estadisticos de empleados
+                </p>
+
+              </div>
+
+              <div className="flex items-start gap-4">
+
+                <div className="min-w-[32px] min-h-[32px] bg-lime-300 rounded-full flex items-center justify-center mt-1">
+                  <Check size={18} className="text-green-950" />
+                </div>
+
+                <p className="text-white text-base sm:text-lg leading-relaxed">
+                  Registro de emplados max 100
                 </p>
 
               </div>

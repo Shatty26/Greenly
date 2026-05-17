@@ -15,16 +15,16 @@ export default function SelectProfile() {
           backgroundSize: '300px' 
         }}
       ></div>
-
-      {/* CONTENEDOR PRINCIPAL: Centrado y con ancho máximo para PC */}
       <div className="relative z-10 w-full max-w-[1200px] px-6 py-10 md:py-20 flex flex-col h-full">
         
         {/* LOGOTIPO - Siempre arriba a la izquierda */}
-        <div className="mb-10 md:mb-16 self-start">
-          <div className="flex items-center gap-1 cursor-pointer" onClick={() => navigate("/")}>
-            <span className="text-3xl font-bold text-[#2d6a4f] tracking-tight">
-              G<span className="text-[#52b788]">reenly</span>
-            </span>
+        <div>
+          <div  onClick={() => navigate("/")}>
+           <img
+          src="/img/greenly-logo.png"
+          alt="Greenly Logo"
+          className="w-[250px] mb-2 md:w-[250px]"
+        />
             <div className="flex flex-col -ml-1">
               <div className="flex gap-0.5">
                 <div className="w-2.5 h-2.5 bg-[#84cc16] rounded-tr-full rounded-bl-full rotate-12"></div>
@@ -69,7 +69,7 @@ export default function SelectProfile() {
           
           {/* Tarjeta: USUARIO */}
           <button
-            onClick={() => navigate("/employeeLogin")}
+            onClick={() => navigate("/EmployeeLogin")}
             className="group flex items-center bg-[#f9fefb] border border-[#f0f9f1] rounded-[40px] p-6 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] hover:bg-white transition-all duration-300 active:scale-[0.98]"
           >
             <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#dcf5e1] rounded-[30px] flex items-center justify-center mr-6 group-hover:bg-[#c2edcc] transition-colors">
@@ -77,7 +77,7 @@ export default function SelectProfile() {
             </div>
             
             <div className="flex-grow text-left">
-              <h2 className="text-2xl font-bold text-[#1b4332] mb-1">Usuario</h2>
+              <h2 className="text-2xl font-bold text-[#1b4332] mb-1">Empleado</h2>
               <p className="text-[#6c757d] text-sm sm:text-base leading-tight">
                 Entra como usuario y explora Greenly
               </p>
@@ -90,7 +90,7 @@ export default function SelectProfile() {
 
           {/* Tarjeta: EMPRESA */}
           <button
-            onClick={() => navigate("/logincompany")}
+            onClick={() => navigate("/LoginCompany")}
             className="group flex items-center bg-[#f9fefb] border border-[#f0f9f1] rounded-[40px] p-6 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] hover:bg-white transition-all duration-300 active:scale-[0.98]"
           >
             <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#dcf5e1] rounded-[30px] flex items-center justify-center mr-6 group-hover:bg-[#c2edcc] transition-colors">
@@ -116,7 +116,7 @@ export default function SelectProfile() {
            <p className="text-gray-400 text-sm font-medium">
              ¿No tienes una cuenta? {' '}
              <button 
-               onClick={() => navigate("/companyregister")} 
+               onClick={() => navigate("/CompanyRegister")} 
                className="text-[#38a169] font-bold hover:underline transition-colors ml-1"
              >
                Regístrate aquí

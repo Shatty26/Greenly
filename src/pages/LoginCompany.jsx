@@ -5,7 +5,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 
-export default function LoginBusiness() {
+export default function LoginCompany() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
