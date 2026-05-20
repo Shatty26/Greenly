@@ -18,7 +18,7 @@ function Navbar() {
         {/* Home */}
         <Link to="/home" className="flex items-center justify-center">
           <img
-            src="public/img/casa.png"
+            src="/img/casa.png"
             alt="home"
             className={`w-10 h-10 sm:w-10 sm:h-12 ${
               isActive("/home") ? "opacity-100" : "opacity-50"
@@ -29,16 +29,16 @@ function Navbar() {
         {/* Calculadora */}
         <Link to="/calculadora" className="flex items-center justify-center">
           <img
-            src="public/img/calculadora.png"
+            src="/img/calculadora.png"
             className={`w-10 h-10 ${isCalcActive ? "opacity-100" : "opacity-50"}`}
             alt="calculadora"
           />
         </Link>
 
-        {/* Retos */}
+        {/* Chabot */}
         <Link to="/Chatbot" className="flex items-center justify-center">
           <img
-            src="public/img/chat-ia.png"
+            src="/img/chat-ia.png"
             alt="retos"
             className={`w-10 h-10 sm:w-10 sm:h-12 ${
               isActive("/Chatbot") ? "opacity-100" : "opacity-50"
@@ -49,7 +49,7 @@ function Navbar() {
         {/* Perfil */}
         <Link to="/perfil" className="flex items-center justify-center">
          <img
-            src="public/img/usuario.png"
+            src="/img/usuario.png"
             alt="profile"
             className={`w-10 h-10 sm:w-11 sm:h-12 ${
                 isActive("/perfil") ? "opacity-100" : "opacity-50"

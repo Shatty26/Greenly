@@ -9,8 +9,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import ModuloInfo from "./pages/ModuloInfo";
-import RecuperarPassword from "./pages/RecuperarPassword";
-import Chatbot from "./pages/Chatbot";
 import ClasificadorIA from "./pages/ClasificadorIA";
 import Retos from "./pages/Retos";
 import Calculadora from "./pages/Calculadora";
@@ -22,7 +20,6 @@ import LoginCompany from "./pages/LoginCompany";
 import CompanyRegister from "./pages/CompanyRegister";
 import RegisterEmploee from "./pages/RegisterEmploee";
 import EmployeeLogin from "./pages/EmployeeLogin";
-import TipoUsuario from "./pages/TipoUsuario";
 import WelcomeBusiness from "./pages/WelcomeBusiness";
 import SelectProfile from "./pages/SelectProfile";
 import PricingScreen from "./pages/PricingScreen"
@@ -34,8 +31,7 @@ function Layout() {
   // Rutas donde NO se debe mostrar el Navbar
   const noNavbarRoutes = ["/", "/WelcomeScreen", "/login", "/register", "/ModuloInfo", "/soporte","/PricingScreen", "/SelectProfile", "/EmployeeLogin", "/RegisterEmploee", "/LoginCompany", "/WelcomeBusiness","/RecuperarPassword"];
 
-   // Rutas donde NO se debe mostrar el Chatbot
-  const noChatbotRoutes = ["/", "/login", "/register", "/PricingScreen"];
+   
 
 
   return (
@@ -43,17 +39,13 @@ function Layout() {
       {/* El Navbar solo aparece si la ruta actual NO está en el array */}
       {!noNavbarRoutes.includes(location.pathname) && <Navbar />}
 
-      {!noChatbotRoutes.includes(location.pathname.toLowerCase()) && <Chatbot />}
-
       <Routes>
-        <Route path="/" element={<TipoUsuario />} />
-        <Route path="/welcomescreen" element={<WelcomeScreen />} />
+        <Route path="/" element={<WelcomeScreen />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/moduloinfo" element={<ModuloInfo />} />
-        <Route path="/recuperarpassword" element={<RecuperarPassword />} />
         <Route path="/calcu1" element={<Calcu1 />} />
         <Route path="/calculadora" element={<Calculadora />} />
         <Route path="/clasificadoria" element={<ClasificadorIA />} />

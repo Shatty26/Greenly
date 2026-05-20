@@ -1,13 +1,18 @@
+import { PayPalButtons } from "@paypal/react-paypal-js";
+
 import {
   Check,
   Leaf,
 } from "lucide-react";
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function PantallaPrecios() {
+export default function PricingScreen() {
 
   const navigate = useNavigate();
+
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ecfff1] via-[#dfffe7] to-[#c8ffd8] overflow-hidden relative">
@@ -241,11 +246,71 @@ export default function PantallaPrecios() {
 
             {/* Botón */}
             <button
-              onClick={() => navigate("/SelectProfile")}
+              onClick={() => setSelectedPlan("Green Mensual")}
               className="w-full mt-10 py-4 rounded-2xl text-lg sm:text-xl font-bold transition-all duration-300 bg-lime-300 hover:bg-lime-200 text-green-950"
             >
               Elegir Plan
             </button>
+
+            {/* PAYPAL */}
+            {selectedPlan === "Green Mensual" && (
+
+              <div className="mt-6">
+
+                <PayPalButtons
+
+                  style={{
+                    layout: "vertical",
+                    color: "blue",
+                    shape: "pill",
+                    label: "paypal",
+                  }}
+
+                  createOrder={(data, actions) => {
+
+                    return actions.order.create({
+
+                      purchase_units: [
+                        {
+                          description: "Green Mensual",
+
+                          amount: {
+                            value: "4.99",
+                          },
+                        },
+                      ],
+
+                    });
+
+                  }}
+
+                  onApprove={(data, actions) => {
+
+                    return actions.order.capture().then((details) => {
+
+                      alert(
+                        `Pago completado por ${details.payer.name.given_name}`
+                      );
+
+                      navigate("/SelectProfile");
+
+                    });
+
+                  }}
+
+                  onError={(err) => {
+
+                    console.log(err);
+
+                    alert("Error en el pago con PayPal");
+
+                  }}
+
+                />
+
+              </div>
+
+            )}
 
           </div>
 
@@ -334,11 +399,71 @@ export default function PantallaPrecios() {
 
             {/* Botón */}
             <button
-              onClick={() => navigate("/SelectProfile")}
+              onClick={() => setSelectedPlan("Eco Anual")}
               className="w-full mt-10 py-4 rounded-2xl text-lg sm:text-xl font-bold transition-all duration-300 bg-white hover:bg-green-50 text-green-900"
             >
               Elegir Plan
             </button>
+
+            {/* PAYPAL */}
+            {selectedPlan === "Eco Anual" && (
+
+              <div className="mt-6">
+
+                <PayPalButtons
+
+                  style={{
+                    layout: "vertical",
+                    color: "blue",
+                    shape: "pill",
+                    label: "paypal",
+                  }}
+
+                  createOrder={(data, actions) => {
+
+                    return actions.order.create({
+
+                      purchase_units: [
+                        {
+                          description: "Eco Anual",
+
+                          amount: {
+                            value: "49.00",
+                          },
+                        },
+                      ],
+
+                    });
+
+                  }}
+
+                  onApprove={(data, actions) => {
+
+                    return actions.order.capture().then((details) => {
+
+                      alert(
+                        `Pago completado por ${details.payer.name.given_name}`
+                      );
+
+                      navigate("/SelectProfile");
+
+                    });
+
+                  }}
+
+                  onError={(err) => {
+
+                    console.log(err);
+
+                    alert("Error en el pago con PayPal");
+
+                  }}
+
+                />
+
+              </div>
+
+            )}
 
           </div>
 

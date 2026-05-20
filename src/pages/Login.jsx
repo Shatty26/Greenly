@@ -152,12 +152,6 @@ function Login() {
               </button>
             </div>
 
-                      {/* OLVIDÉ MI CONTRASEÑA */}
-        <p
-            onClick={() => navigate("/RecuperarPassword")}
-            className="text-right text-sm text-green-800 font-semibold cursor-pointer hover:underline-mt-2 ">
-            ¿Olvidaste tu contraseña?
-        </p>
 
             {/* Button */}
             <button

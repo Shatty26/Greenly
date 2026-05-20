@@ -8,14 +8,6 @@ function WelcomeScreen() {
   return (
     <div className="w-screen min-h-screen bg-white flex justify-center items-start md:items-center relative overflow-hidden">
 
-      {/* Flecha para regresar */}
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-6 left-6 z-50 bg-white p-3 rounded-full shadow-lg hover:bg-green-50 transition"
-      >
-        <ArrowLeft className="w-6 h-6 text-green-700" />
-      </button>
-
         <img
         src="/fondoCal.png"
         alt="fondo"
