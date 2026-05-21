@@ -26,6 +26,11 @@
     "react-router-dom": "^7.14.2",
     "recharts": "^3.8.1"
   },
+  "overrides": {
+    "@teachablemachine/image": {
+      "@tensorflow/tfjs": "$@tensorflow/tfjs"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
