@@ -8,9 +8,7 @@ const GreenBotPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const chatBodyRef = useRef(null);
 
-  // NOTA: Recuerda proteger tu API Key en variables de entorno (.env) en producción
-  const API_KEY = "AIzaSyApMCSYOxN0ykRM3wPE-TIZqoAmJiKJ9kU"; 
-  const genAI = new GoogleGenerativeAI(API_KEY);
+  const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
   const model = genAI.getGenerativeModel({ 
     model: "gemini-2.5-flash",
     systemInstruction: "Eres GreenBot, un experto ambiental. Respuestas cortas (máximo 5 líneas), precisas y usando siempre algún emoji relacionado con la naturaleza. 🌿"
