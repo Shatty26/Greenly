@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import * as tmImage from '@teachablemachine/image';
+
+// tf and tmImage are loaded from CDN scripts in index.html (window.tf, window.tmImage)
+/* global tf, tmImage */
 
 const ClasificadorIA = () => {
   const [model, setModel] = useState(null);
