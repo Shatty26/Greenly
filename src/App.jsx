@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import ModuloInfo from "./pages/ModuloInfo";
 import ClasificadorIA from "./pages/ClasificadorIA";
+import Chatbot from "./pages/Chatbot";
 import Retos from "./pages/Retos";
 import Calculadora from "./pages/Calculadora";
 import Calcu1 from "./pages/Calcu1";
@@ -46,6 +47,7 @@ function Layout() {
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/moduloinfo" element={<ModuloInfo />} />
+        <Route path="/chatbot" element={<Chatbot />} />
         <Route path="/calcu1" element={<Calcu1 />} />
         <Route path="/calculadora" element={<Calculadora />} />
         <Route path="/clasificadoria" element={<ClasificadorIA />} />
