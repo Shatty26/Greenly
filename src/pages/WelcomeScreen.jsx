@@ -98,7 +98,7 @@ function WelcomeScreen() {
 
         {/* Registrarse */}
         <button
-          onClick={() => (window.location.href = "/register")}
+          onClick={() => (navigate("/TipoUsuario"))}
           className="w-full py-4 rounded-full font-semibold text-lg border-2 border-green-700 text-green-800 bg-white mt-6 transition hover:bg-green-50 hover:scale-[1.03] md:py-3 md:text-base md:mt-4"
         >
           Registrarse

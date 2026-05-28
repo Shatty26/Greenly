@@ -9,7 +9,7 @@ const Chatbot = () => {
   const chatBodyRef = useRef(null);
 
   // NOTA: Recuerda proteger tu API KEY antes de subir el proyecto a producción (p. ej. usando variables de entorno)
-  const API_KEY = "AIzaSyCBNyJ-TAHIRCfJj5aGNqAA5DrkW2NGXbw"; 
+  const API_KEY = "AIzaSyBzfurab4yz8vRE9zRoQceSCRlvj1pG7Ho"; 
   const genAI = new GoogleGenerativeAI(API_KEY);
   
   // Configuración del modelo

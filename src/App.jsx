@@ -17,20 +17,19 @@ import Calcu1 from "./pages/Calcu1";
 import Perfil from "./pages/Perfil";
 import EditarPerfil from "./pages/EditarPerfil";
 import Soporte from "./pages/Soporte";
-import LoginCompany from "./pages/LoginCompany";
+import HomEmpresa from "./pages/HomEmpresa";
 import CompanyRegister from "./pages/CompanyRegister";
 import RegisterEmploee from "./pages/RegisterEmploee";
-import EmployeeLogin from "./pages/EmployeeLogin";
-import WelcomeBusiness from "./pages/WelcomeBusiness";
 import SelectProfile from "./pages/SelectProfile";
-import PricingScreen from "./pages/PricingScreen"
-import DondeReciclar from "./pages/DondeReciclar"
+import PricingScreen from "./pages/PricingScreen";
+import DondeReciclar from "./pages/DondeReciclar";
+import TipoUsuario from "./pages/TipoUsuario"
 
 function Layout() {
   const location = useLocation();
 
   // Rutas donde NO se debe mostrar el Navbar
-  const noNavbarRoutes = ["/", "/WelcomeScreen", "/login", "/register", "/ModuloInfo", "/soporte","/PricingScreen", "/SelectProfile", "/EmployeeLogin", "/RegisterEmploee", "/LoginCompany", "/WelcomeBusiness","/RecuperarPassword"];
+  const noNavbarRoutes = ["/", "/WelcomeScreen", "/login", "/Register", "/ModuloInfo", "/soporte","/PricingScreen", "/SelectProfile", "/RegisterEmploee","/RecuperarPassword", "/Chatbot", "/TipoUsuario", "/CompanyRegister",];
 
    
 
@@ -53,15 +52,14 @@ function Layout() {
         <Route path="/clasificadoria" element={<ClasificadorIA />} />
         <Route path="/retos" element={<Retos />} />
         <Route path="/soporte" element={<Soporte />} />
-        <Route path="/logincompany" element={<LoginCompany />} />
         <Route path="/companyregister" element={<CompanyRegister/>} />
-        <Route path="/welcomecompany" element={<WelcomeBusiness />} />
         <Route path="/selectprofile" element={<SelectProfile />} />
-        <Route path="/employee" element={<EmployeeLogin />} />
         <Route path="/registeremploee" element={<RegisterEmploee />} />
         <Route path="/pricingscreen" element={<PricingScreen />} />
         <Route path="/dondereciclar" element={<DondeReciclar />} />
         <Route path="/editarperfil" element={<EditarPerfil />} />
+        <Route path="/TipoUsuario" element={<TipoUsuario />} />
+        <Route path="/homempresa" element={<HomEmpresa />} />
 
       </Routes>
     </>

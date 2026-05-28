@@ -9,50 +9,70 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // Estado para capturar y mostrar los mensajes de error en la UI
+  const [errorMessage, setErrorMessage] = useState(""); 
 
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
-  e.preventDefault();
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setErrorMessage(""); // Limpiar errores previos de la pantalla
 
-  if (
-    nombre.trim() === "" ||
-    email.trim() === "" ||
-    password.trim() === ""
-  ) {
-    return;
-  }
+    // 1. Validación de campos vacíos
+    if (
+      nombre.trim() === "" ||
+      email.trim() === "" ||
+      password.trim() === ""
+    ) {
+      setErrorMessage("Por favor, rellena todos los campos.");
+      return;
+    }
 
-  if (password.length < 8) {
-    return;
-  }
+    // 2. Validación de largo de contraseña
+    if (password.length < 8) {
+      setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
 
-  createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+    try {
+      // 3. Crear el usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Guardar nombre en localStorage
+      // Guardar nombre en localStorage para usarlo en el Home
       localStorage.setItem("username", nombre);
 
-      return addDoc(collection(db, "usuarios"), {
+      // 4. Guardar datos en Firestore en la colección 'usuarios'
+      await addDoc(collection(db, "usuarios"), {
         nombre: nombre,
         email: email,
         uid: user.uid,
         fecha: new Date().toLocaleString(),
       });
-    })
-    .then(() => {
-      // limpiar inputs
+
+      // Si todo sale bien, limpiar inputs y redirigir al Home inmediatamente
       setNombre("");
       setEmail("");
       setPassword("");
-
       navigate("/home");
-    })
-    .catch((error) => {
-      console.log(error.message);
-    });
-};
+
+    } catch (error) {
+      console.error("Error exacto en el registro:", error.code, error.message);
+      
+      // 5. Manejo de alertas condicionales para fallas de Red o Firebase
+      if (error.code === "auth/network-request-failed" || error.message.includes("offline")) {
+        setErrorMessage("Error de red. Revisa tu conexión a internet e inténtalo de nuevo.");
+      } else if (error.code === "auth/email-already-in-use") {
+        setErrorMessage("Este correo ya está registrado por otro usuario.");
+      } else if (error.code === "auth/invalid-email") {
+        setErrorMessage("El formato del correo no es válido.");
+      } else if (error.message.includes("permissions") || error.code === "permission-denied") {
+        setErrorMessage("Error de permisos en Firestore. Asegúrate de activar el acceso de lectura/escritura en tu consola de Firebase.");
+      } else {
+        setErrorMessage("Hubo un problema al guardar los datos. Inténtalo más tarde.");
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white font-[Poppins] relative overflow-hidden">
@@ -60,13 +80,14 @@ function Register() {
       {/* Fondo */}
       <div
         className="absolute top-0 left-0 w-full h-1/2 lg:h-full bg-cover bg-center"
-        style={{ backgroundImage: "url('public/img/fondoArboles.png')" }}
+        style={{ backgroundImage: "url('/img/fondoArboles.png')" }}
       >
         <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-green-300/70 via-white/40 to-white"></div>
       </div>
 
       {/* BACK BUTTON */}
       <button
+        type="button"
         onClick={() => navigate(-1)}
         className="
           absolute top-6 left-6 
@@ -140,6 +161,13 @@ function Register() {
 
           <form onSubmit={handleRegister} autoComplete="off" className="flex flex-col gap-6">
 
+            {/* Mensaje de Error Dinámico en la interfaz */}
+            {errorMessage && (
+              <div className="p-4 text-sm text-red-700 bg-red-100 rounded-2xl font-medium border border-red-200">
+                ⚠️ {errorMessage}
+              </div>
+            )}
+
             {/* Name */}
             <input
               type="text"
@@ -147,7 +175,7 @@ function Register() {
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               className="
-              text-sm lg:text-base
+                text-sm lg:text-base
                 w-full py-4 lg:py-5 px-6
                 rounded-2xl bg-gray-200 
                 outline-none text-gray-700 
@@ -182,7 +210,7 @@ function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
                 className="
-                text-sm lg:text-base
+                  text-sm lg:text-base
                   w-full py-4 lg:py-5 px-6
                   rounded-2xl bg-gray-200 
                   outline-none text-gray-700 
@@ -205,7 +233,7 @@ function Register() {
             </div>
 
             {/* Password Strength */}
-            {password.length > 7 && (
+            {password.length > 0 && (
               <p className="text-sm text-gray-600 -mt-2">
                 {password.length < 8 ? (
                   <span className="text-red-500 font-semibold">
@@ -220,7 +248,7 @@ function Register() {
             )}
 
             {/* Button */}
-            <button
+            <button 
               type="submit"
               className="
                 w-full py-4 lg:py-5
@@ -229,6 +257,7 @@ function Register() {
                 text-white font-bold text-lg lg:text-xl
                 shadow-lg hover:opacity-90 transition
               "
+              onClick={() => navigate("/Home")}
             >
               Regístrate
             </button>

@@ -6,12 +6,12 @@ export default function TipoUsuario() {
 
   const elegirUsuario = () => {
     localStorage.setItem("tipoCuenta", "usuario");
-    navigate("/WelcomeScreen");
+    navigate("/Register");
   };
 
   const elegirEmpresa = () => {
     localStorage.setItem("tipoCuenta", "empresa");
-    navigate("/PricingScreen");
+    navigate("/CompanyRegister");
   };
 
   return (

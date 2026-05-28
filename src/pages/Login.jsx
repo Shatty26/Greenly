@@ -1,34 +1,115 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase/config";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore"; 
+import { auth, db } from "../firebase/config";    
 import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
- const handleLogin = (e) => {
-  e.preventDefault();
-{/* Validación básica la logica tras el login*/}
-  if (email.trim() === "" || password.trim() === "") {
-    return;
-  }
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setErrorMessage(""); 
+    setIsLoading(true);  
 
-  signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      navigate("/home");
-    })
-    .catch((error) => {
-      console.log(error.message);
-    });
-};
+    if (email.trim() === "" || password.trim() === "") {
+      setErrorMessage("Por favor, rellena todos los campos.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Autenticar primero en Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log("1. Auth exitoso. Buscando UID:", user.uid);
+
+      // 2. Intentar buscar primero en la colección 'empresas' por ID directo
+      let empresaDoc = null;
+      try {
+        empresaDoc = await getDoc(doc(db, "empresas", user.uid));
+      } catch (err) {
+        console.log("Error al buscar en empresas:", err);
+      }
+
+      if (empresaDoc && empresaDoc.exists()) {
+        console.log("¡Encontrado en la colección empresas!");
+        const datosEmpresa = empresaDoc.data();
+        localStorage.setItem("username", datosEmpresa.nombreEmpresa || "Empresa");
+        localStorage.setItem("role", "business_admin");
+        navigate("/homEmpresa");
+        return; // Detener ejecución ya que entró como empresa
+      }
+
+      // 3. Si no es empresa, buscar en 'usuarios' por ID directo
+      console.log("2. No es empresa. Buscando en 'usuarios' por ID directo...");
+      let usuarioDoc = null;
+      try {
+        usuarioDoc = await getDoc(doc(db, "usuarios", user.uid));
+      } catch (err) {
+        console.log("Error al buscar usuario por ID:", err);
+      }
+
+      if (usuarioDoc && usuarioDoc.exists()) {
+        console.log("¡Encontrado en usuarios por ID directo!");
+        const datosUsuario = usuarioDoc.data();
+        localStorage.setItem("username", datosUsuario.nombre || datosUsuario.username || "Usuario");
+        localStorage.setItem("role", "user");
+        navigate("/home");
+        return;
+      }
+
+      // 4. SOLUCIÓN DE EMERGENCIA: Buscar en 'usuarios' filtrando por el campo 'email'
+      console.log("3. ID no coincide. Buscando en 'usuarios' por campo 'email'...");
+      const usuariosRef = collection(db, "usuarios");
+      const q = query(usuariosRef, where("email", "==", email.trim()));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Se encontró el usuario por su correo electrónico (tenía ID aleatorio)
+        console.log("¡Encontrado usuario por filtro de correo electrónico!");
+        const usuarioData = querySnapshot.docs[0].data();
+        localStorage.setItem("username", usuarioData.nombre || usuarioData.username || "Usuario");
+        localStorage.setItem("role", "user");
+        navigate("/home");
+      } else {
+        // Si de verdad no aparece en ningún lado
+        setErrorMessage(`No se encontró ningún perfil asociado a este correo en la base de datos.`);
+      }
+
+    } catch (error) {
+      console.log("Error exacto en la autenticación:", error.code, error.message);
+      
+      if (error.code === "auth/network-request-failed" || error.message.includes("offline")) {
+        setErrorMessage("Error de red. Revisa tu conexión a internet.");
+      } else if (
+        error.code === "auth/invalid-credential" || 
+        error.code === "auth/user-not-found" || 
+        error.code === "auth/wrong-password"
+      ) {
+        setErrorMessage("El correo o la contraseña son incorrectos. Verifica tus datos.");
+      } else if (error.code === "auth/invalid-email") {
+        setErrorMessage("El formato del correo electrónico no es válido.");
+      } else if (error.code === "auth/too-many-requests") {
+        setErrorMessage("Has intentado demasiadas veces. Cuenta bloqueada temporalmente.");
+      } else {
+        setErrorMessage("Hubo un problema al ingresar. Inténtalo más tarde.");
+      }
+    } finally {
+      setIsLoading(false); 
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white font-[Poppins] relative overflow-hidden">
-
       {/* Fondo */}
       <div
         className="absolute top-0 left-0 w-full h-1/2 lg:h-full bg-cover bg-center"
@@ -67,17 +148,14 @@ function Login() {
 
       {/* MAIN LAYOUT */}
       <div className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 lg:px-20 gap-10">
-
         {/* LEFT TEXT */}
         <div className="w-full lg:w-1/2 text-left pl-3 lg:pl-0 lg:text-left">
           <h1 className="text-[52px] lg:text-[85px] font-black text-green-950 leading-none">
             Bienvenido
           </h1>
-
           <h2 className="text-[28px] lg:text-[45px] font-bold text-green-800 mt-2">
             a salvar el
           </h2>
-
           <h1 className="text-[72px] lg:text-[100px] font-black text-green-500 leading-none">
             Mundo
           </h1>
@@ -93,6 +171,7 @@ function Login() {
             shadow-2xl
             px-8 py-10
             lg:px-12 lg:py-14
+            relative z-20
           "
         >
           <h2 className="text-center text-[36px] lg:text-[45px] font-extrabold text-green-500">
@@ -105,15 +184,22 @@ function Login() {
               className="font-bold text-green-900 cursor-pointer hover:underline"
               onClick={() => navigate("/register")}
             >
-              Registrate
+              Regístrate
             </span>
           </p>
 
           <form onSubmit={handleLogin} className="flex flex-col gap-6">
+            {errorMessage && (
+              <div className="p-4 text-sm text-red-700 bg-red-100 rounded-2xl font-medium border border-red-200">
+                ⚠️ {errorMessage}
+              </div>
+            )}
+
             {/* Email */}
             <input
               type="email"
               placeholder="Email"
+              value={email}
               className="
                 w-full py-4 lg:py-5 px-6
                 rounded-2xl bg-gray-200 
@@ -129,6 +215,7 @@ function Login() {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
+                value={password}
                 className="
                   w-full py-4 lg:py-5 px-6
                   rounded-2xl bg-gray-200 
@@ -138,7 +225,6 @@ function Login() {
                 "
                 onChange={(e) => setPassword(e.target.value)}
               />
-
               <button
                 type="button"
                 className="
@@ -152,21 +238,21 @@ function Login() {
               </button>
             </div>
 
-
             {/* Button */}
             <button
               type="submit"
-              className="
+              disabled={isLoading}
+              className={`
                 w-full py-4 lg:py-5
                 rounded-2xl 
                 bg-gradient-to-r from-green-800 to-green-500
                 text-white font-bold text-lg lg:text-xl
                 shadow-lg hover:opacity-90 transition
-              "
+                ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
+              `}
             >
-              Iniciar Sesión
+              {isLoading ? "Ingresando..." : "Iniciar Sesión"}
             </button>
-        
           </form>
         </div>
       </div>
