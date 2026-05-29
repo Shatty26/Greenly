@@ -50,6 +50,7 @@ function Layout() {
         <Route path="/calcu1" element={<Calcu1 />} />
         <Route path="/calculadora" element={<Calculadora />} />
         <Route path="/clasificadoria" element={<ClasificadorIA />} />
+        <Route path="/chatbot" element={<Chatbot />} />
         <Route path="/retos" element={<Retos />} />
         <Route path="/soporte" element={<Soporte />} />
         <Route path="/companyregister" element={<CompanyRegister/>} />
