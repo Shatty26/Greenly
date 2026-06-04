@@ -45,12 +45,38 @@ function Login() {
         const datosEmpresa = empresaDoc.data();
         localStorage.setItem("username", datosEmpresa.nombreEmpresa || "Empresa");
         localStorage.setItem("role", "business_admin");
-        navigate("/homEmpresa");
-        return; // Detener ejecución ya que entró como empresa
+        navigate("/homempresa");
+        return; 
       }
 
-      // 3. Si no es empresa, buscar en 'usuarios' por ID directo
-      console.log("2. No es empresa. Buscando en 'usuarios' por ID directo...");
+      // 3. NUEVO PASO: Buscar en la colección 'empleados' por ID directo
+      console.log("2. No es empresa. Buscando en 'empleados' por ID directo...");
+      let empleadoDoc = null;
+      try {
+        empleadoDoc = await getDoc(doc(db, "empleados", user.uid));
+      } catch (err) {
+        console.log("Error al buscar empleado por ID:", err);
+      }
+
+      if (empleadoDoc && empleadoDoc.exists()) {
+        console.log("¡Encontrado en la colección empleados!");
+        const datosEmpleado = empleadoDoc.data();
+        
+        // Verificar si el empleado está activo antes de dejarlo entrar
+        if (datosEmpleado.estado === false) {
+          setErrorMessage("Esta cuenta de empleado ha sido desactivada.");
+          return;
+        }
+
+        localStorage.setItem("username", datosEmpleado.nombre || "Empleado");
+        localStorage.setItem("role", datosEmpleado.rol || "empleado");
+        localStorage.setItem("empresaId", datosEmpleado.empresaId || ""); 
+        navigate("/home");
+        return;
+      }
+
+      // 4. Si no es empresa ni empleado, buscar en 'usuarios' por ID directo
+      console.log("3. Buscando en 'usuarios' por ID directo...");
       let usuarioDoc = null;
       try {
         usuarioDoc = await getDoc(doc(db, "usuarios", user.uid));
@@ -67,22 +93,37 @@ function Login() {
         return;
       }
 
-      // 4. SOLUCIÓN DE EMERGENCIA: Buscar en 'usuarios' filtrando por el campo 'email'
-      console.log("3. ID no coincide. Buscando en 'usuarios' por campo 'email'...");
+      // 5. SOLUCIÓN DE EMERGENCIA: Buscar en 'usuarios' filtrando por el campo 'email'
+      console.log("4. ID no coincide. Buscando en 'usuarios' por campo 'email'...");
       const usuariosRef = collection(db, "usuarios");
       const q = query(usuariosRef, where("email", "==", email.trim()));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // Se encontró el usuario por su correo electrónico (tenía ID aleatorio)
         console.log("¡Encontrado usuario por filtro de correo electrónico!");
         const usuarioData = querySnapshot.docs[0].data();
         localStorage.setItem("username", usuarioData.nombre || usuarioData.username || "Usuario");
         localStorage.setItem("role", "user");
         navigate("/home");
       } else {
-        // Si de verdad no aparece en ningún lado
-        setErrorMessage(`No se encontró ningún perfil asociado a este correo en la base de datos.`);
+        // SOLUCIÓN DE EMERGENCIA 2: Buscar también en 'empleados' por campo 'email' por si acaso
+        const empleadosRef = collection(db, "empleados");
+        const qEmp = query(empleadosRef, where("email", "==", email.trim()));
+        const empSnapshot = await getDocs(qEmp);
+
+        if (!empSnapshot.empty) {
+          console.log("¡Encontrado empleado por filtro de correo electrónico!");
+          const empData = empSnapshot.docs[0].data();
+          if (empData.estado === false) {
+            setErrorMessage("Esta cuenta de empleado ha sido desactivada.");
+            return;
+          }
+          localStorage.setItem("username", empData.nombre || "Empleado");
+          localStorage.setItem("role", empData.rol || "empleado");
+          navigate("/home");
+        } else {
+          setErrorMessage(`No se encontró ningún perfil asociado a este correo en la base de datos.`);
+        }
       }
 
     } catch (error) {
@@ -182,7 +223,7 @@ function Login() {
             ¿No tienes una cuenta?{" "}
             <span
               className="font-bold text-green-900 cursor-pointer hover:underline"
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/tipousuario")}
             >
               Regístrate
             </span>

@@ -14,101 +14,115 @@ export default function TipoUsuario() {
     navigate("/CompanyRegister");
   };
 
+  const elegirEmpleado = () => {
+    localStorage.setItem("tipoCuenta", "empleado");
+    navigate("/RegisterEmpleados");
+  };
+
+  const cards = [
+    {
+      title: "Usuario",
+      description: "Continúa como usuario normal y explora Greenly",
+      action: elegirUsuario,
+      icon: "usuario",
+    },
+    {
+      title: "Empresa",
+      description: "Continúa como empresa y gestiona tu impacto",
+      action: elegirEmpresa,
+      icon: "empresa",
+    },
+    {
+      title: "Empleado",
+      description: "Únete a la iniciativa de tu empresa y colabora en equipo",
+      action: elegirEmpleado,
+      icon: "empleado",
+    },
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-0 sm:px-4 py-0 sm:py-10">
+    <div className="min-h-screen w-full bg-[#f4fbf4] flex items-center justify-center sm:p-6 antialiased">
       
-      {/* CONTENEDOR PRINCIPAL */}
-      <div className="w-full min-h-screen sm:min-h-0 sm:max-w-4xl bg-white sm:rounded-[30px] sm:shadow-xl px-6 sm:px-10 py-10 relative overflow-hidden">
-        {/* LOGO */}
-        <div className="mb-6">
-          <img
-            src="/img/greenly-logo.png"
-            alt="Greenly Logo"
-            className="w-[140px]"
-          />
-        </div>
+      {/* CONTENEDOR PRINCIPAL: Mantiene el tamaño estilizado full-height */}
+      <div className="w-full min-h-screen sm:min-h-0 sm:max-w-xl lg:max-w-4xl bg-white sm:rounded-[35px] sm:shadow-[0_15px_40px_rgba(0,0,0,0.04)] sm:border sm:border-gray-100/60 p-6 sm:p-10 flex flex-col justify-start relative overflow-hidden">
+        
+        {/* SECCIÓN SUPERIOR: ENCABEZADO Y PLANTA */}
+        <div className="relative w-full pt-4 sm:pt-0">
+          
+          {/* LOGO */}
+          <div className="mb-6 sm:mb-8">
+            <img
+              src="/img/greenly-logo.png"
+              alt="Greenly Logo"
+              className="w-28 sm:w-32 object-contain"
+            />
+          </div>
 
-        {/* HEADER */}
-        <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
-
-          {/* TEXTO */}
-          <div className="max-w-xl">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#064e3b] leading-tight">
-              Elige tu <br /> tipo de cuenta
+          {/* TEXTO INFORMATIVO */}
+          <div className="max-w-[62%] sm:max-w-[65%] flex flex-col gap-2">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#064e3b] tracking-tight leading-tight">
+              Elige tu <br />
+              <span className="text-[#064e3b]">tipo de cuenta</span>
             </h1>
 
-            {/* LINEA VERDE */}
-            <div className="w-20 h-2 bg-[#22c55e] rounded-full mt-4 mb-4"></div>
+            {/* BARRA VERDE */}
+            <div className="w-16 h-2 bg-[#22c55e] rounded-full my-2"></div>
 
-            <p className="text-gray-500 text-base sm:text-lg">
-              Selecciona cómo deseas continuar <br />
-              y empieza a generar un impacto real.
+            <p className="text-gray-400 text-sm sm:text-base font-medium leading-relaxed">
+              Selecciona cómo deseas continuar y empieza a generar un impacto real
             </p>
+          </div>
+
+          {/* IMAGEN DE LA PLANTA */}
+          <div className="absolute top-4 right-[-15px] sm:right-0 w-[160px] sm:w-[210px] lg:w-[260px] pointer-events-none drop-shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
+            <img
+              src="/img/manocontierra.png"
+              alt="Greenly Planta"
+              className="w-full h-auto object-contain"
+            />
           </div>
         </div>
 
-        {/* TARJETAS */}
-        <div className="mt-8 flex flex-col gap-4">
+        {/* SECCIÓN INFERIOR: TARJETAS (Ahora con un margen controlado que las sube) */}
+        <div className="flex flex-col gap-4 w-full mt-10 sm:mt-12 pb-6 sm:pb-0">
+          {cards.map((card) => (
+            <button
+              key={card.title}
+              onClick={card.action}
+              className="w-full bg-[#fafdfa] border border-[#eaf6eb] rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_25px_rgba(34,197,94,0.08)] hover:border-[#d2edd5] active:scale-[0.99] transition-all duration-200 text-left group"
+            >
+              {/* Bloque Izquierdo: Icono + Contenido */}
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                
+                {/* Cuadro del Icono */}
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#eaf7eb] rounded-xl flex items-center justify-center flex-shrink-0 transition-colors group-hover:bg-[#ddf2df]">
+                  <img
+                    src={`/img/${card.icon}.png`}
+                    alt={card.title}
+                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+                    onError={(e) => { e.target.src = "/img/usuario.png"; }}
+                  />
+                </div>
 
-          {/* USUARIO */}
-          <button
-            onClick={elegirUsuario}
-            className="w-full bg-[#f6fff6] border border-[#e0f2e0] rounded-2xl px-5 py-5 sm:px-7 sm:py-6 flex items-center gap-4 shadow-md hover:shadow-xl transition-all duration-300 text-left group"
-          >
-            {/* ICONO */}
-            <div className="w-16 h-16 bg-[#dff3d7] rounded-2xl flex items-center justify-center flex-shrink-0">
-              <img
-                src="/img/usuario.png"
-                alt="Usuario"
-                className="w-9 h-9 object-contain"
-              />
-            </div>
+                {/* Textos */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#064e3b]">
+                    {card.title}
+                  </h2>
+                  <p className="text-gray-400 text-xs sm:text-sm font-normal leading-snug mt-0.5">
+                    {card.description}
+                  </p>
+                </div>
+              </div>
 
-            {/* TEXTO */}
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-[#064e3b]">Usuario</h2>
-              <p className="text-gray-500 mt-1 text-base leading-snug">
-                Continúa como usuario normal <br />
-                y explora Greenly
-              </p>
-            </div>
-
-            {/* FLECHA */}
-            <div className="w-12 h-12 bg-[#22c55e] group-hover:bg-[#16a34a] rounded-full flex items-center justify-center text-white text-2xl font-bold group-hover:scale-110 transition-all duration-300 flex-shrink-0">
-              ›
-            </div>
-          </button>
-
-          {/* EMPRESA */}
-          <button
-            onClick={elegirEmpresa}
-            className="w-full bg-[#f6fff6] border border-[#e0f2e0] rounded-2xl px-5 py-5 sm:px-7 sm:py-6 flex items-center gap-4 shadow-md hover:shadow-xl transition-all duration-300 text-left group"
-          >
-            {/* ICONO */}
-            <div className="w-16 h-16 bg-[#dff3d7] rounded-2xl flex items-center justify-center flex-shrink-0">
-              <img
-                src="/img/empresa.png"
-                alt="Empresa"
-                className="w-9 h-9 object-contain"
-              />
-            </div>
-
-            {/* TEXTO */}
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-[#064e3b]">Empresa</h2>
-              <p className="text-gray-500 mt-1 text-base leading-snug">
-                Continúa como empresa <br />
-                y gestiona tu impacto
-              </p>
-            </div>
-
-            {/* FLECHA */}
-            <div className="w-12 h-12 bg-[#22c55e] group-hover:bg-[#16a34a] rounded-full flex items-center justify-center text-white text-2xl font-bold group-hover:scale-110 transition-all duration-300 flex-shrink-0">
-              ›
-            </div>
-          </button>
-
+              {/* Botón Circular Derecha (Flecha) */}
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#22c55e] group-hover:bg-[#16a34a] rounded-full flex items-center justify-center text-white text-lg font-bold transition-all duration-200 flex-shrink-0 shadow-sm group-hover:translate-x-0.5">
+                ›
+              </div>
+            </button>
+          ))}
         </div>
+
       </div>
     </div>
   );

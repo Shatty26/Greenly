@@ -1,91 +1,95 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 
-function CompanyRegister() {
-  const navigate = useNavigate();
+function RegisterEmpleados() {
+  const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [companyType, setCompanyType] = useState("");
-  const [companyCode, setCompanyCode] = useState(""); 
-  const [employeeCount, setEmployeeCount] = useState("");
-
+  const [departamento, setDepartamento] = useState("");
+  const [empresaId, setEmpresaId] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // Estado para capturar y mostrar los mensajes de error en la UI
   const [errorMessage, setErrorMessage] = useState(""); 
-  const [loading, setLoading] = useState(false); // Estado para evitar múltiples clics
+
+  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setErrorMessage(""); 
+    setErrorMessage(""); // Limpiar errores previos de la pantalla
 
+    // 1. Validación de campos vacíos
     if (
+      nombre.trim() === "" ||
       email.trim() === "" ||
       password.trim() === "" ||
-      companyType === "" ||
-      companyCode.trim() === "" ||
-      employeeCount.trim() === ""
+      departamento.trim() === "" ||
+      empresaId.trim() === ""
     ) {
       setErrorMessage("Por favor, rellena todos los campos.");
       return;
     }
 
+    // 2. Validación de largo de contraseña
     if (password.length < 8) {
       setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
     try {
-      setLoading(true);
-
-      // 1. Crear el usuario en Firebase Auth
+      // 3. Crear el usuario en Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Guardar datos en Firestore en la colección 'empresas' usando el UID
-      // Cambié 'tipoEmpresa' por 'rubro' para que sea compatible con tu pantalla de perfil y calculadora
-      await setDoc(doc(db, "empresas", user.uid), {
-        email: email,
-        rubro: companyType, 
-        codigoEmpresa: companyCode.trim(), 
-        cantidadEmpleados: Number(employeeCount), 
-        role: "business_admin",           
-        fecha: new Date().toLocaleString(),
+      // Guardar nombre en localStorage para usarlo en el Home
+      localStorage.setItem("username", nombre);
+
+      // 4. Guardar datos en Firestore en la colección 'empleados' con la estructura definida
+      await addDoc(collection(db, "empleados"), {
         uid: user.uid,
+        nombre: nombre.trim(),
+        email: email.trim(),
+        departamento: departamento.trim(),
+        empresaId: empresaId.trim(),
+        rol: "empleado",                  // Rol fijo predeterminado
+        estado: true,                     // Boolean (Activo)
+        puntosAcumulados: 0,              // int64 inicializado en 0
+        registroActividades: [],          // Array vacío listo para mapas
+        fechaIngreso: new Date().toISOString(),
       });
 
-      // 3. Limpiar inputs del estado
+      // Si todo sale bien, limpiar inputs y redirigir al Home inmediatamente
+      setNombre("");
       setEmail("");
       setPassword("");
-      setCompanyType("");
-      setCompanyCode("");
-      setEmployeeCount("");
-      
-      // 4. Redirigir correctamente AQUÍ una vez que todo se guardó con éxito
-      navigate("/HomEmpresa");
+      setDepartamento("");
+      setEmpresaId("");
+      navigate("/home");
 
     } catch (error) {
-      console.error("Error exacto en el registro de empresa:", error.code, error.message);
+      console.error("Error exacto en el registro de empleados:", error.code, error.message);
       
+      // 5. Manejo de alertas condicionales para fallas de Red o Firebase
       if (error.code === "auth/network-request-failed" || error.message.includes("offline")) {
         setErrorMessage("Error de red. Revisa tu conexión a internet e inténtalo de nuevo.");
       } else if (error.code === "auth/email-already-in-use") {
-        setErrorMessage("Este correo ya está registrado por otra empresa.");
+        setErrorMessage("Este correo ya está registrado por otro empleado.");
       } else if (error.code === "auth/invalid-email") {
         setErrorMessage("El formato del correo no es válido.");
+      } else if (error.message.includes("permissions") || error.code === "permission-denied") {
+        setErrorMessage("Error de permisos en Firestore. Asegúrate de activar el acceso de lectura/escritura en tu consola de Firebase.");
       } else {
         setErrorMessage("Hubo un problema al guardar los datos. Inténtalo más tarde.");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-white font-[Poppins] relative overflow-hidden">
 
-      {/* Fondo Idéntico */}
+      {/* Fondo */}
       <div
         className="absolute top-0 left-0 w-full h-1/2 lg:h-full bg-cover bg-center"
         style={{ backgroundImage: "url('/img/fondoArboles.png')" }}
@@ -109,7 +113,7 @@ function CompanyRegister() {
         <span className="text-xl font-black text-green-900">←</span>
       </button>
 
-      {/* HAND IMAGE */}
+      {/* HAND IMAGE (movible libre) */}
       <img
         src="/img/manocontierra.png"
         alt="mano"
@@ -140,7 +144,7 @@ function CompanyRegister() {
           </h1>
         </div>
 
-        {/* Tarjeta de Registro */}
+        {/* Tarjeta */}
         <div
           className="
             mt-15 lg:mt-0
@@ -153,15 +157,15 @@ function CompanyRegister() {
             lg:px-12 lg:py-14
           "
         >
-          <h2 className="text-center text-[34px] lg:text-[42px] font-extrabold text-green-500 leading-tight">
-            Registro Empresa
+          <h2 className="text-center text-[36px] lg:text-[45px] font-extrabold text-green-500">
+            Registro Colaborador
           </h2>
 
           <p className="text-center text-sm lg:text-base text-gray-600 mt-1 mb-8">
-            ¿Ya tienes cuenta corporativa?{" "}
+            ¿Tienes una cuenta?{" "}
             <span
               className="font-bold text-green-900 cursor-pointer hover:underline"
-              onClick={() => navigate("/login")} 
+              onClick={() => navigate("/login")}
             >
               Inicia Sesión
             </span>
@@ -169,23 +173,22 @@ function CompanyRegister() {
 
           <form onSubmit={handleRegister} autoComplete="off" className="flex flex-col gap-5">
 
-            {/* Mensaje de Error Dinámico */}
+            {/* Mensaje de Error Dinámico en la interfaz */}
             {errorMessage && (
               <div className="p-4 text-sm text-red-700 bg-red-100 rounded-2xl font-medium border border-red-200">
                 ⚠️ {errorMessage}
               </div>
             )}
 
-            {/* Correo de la Empresa */}
+            {/* Name */}
             <input
-              type="email"
-              placeholder="Correo de la empresa"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="new-email"
+              type="text"
+              placeholder="Nombre Completo"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
               className="
                 text-sm lg:text-base
-                w-full py-4 lg:py-5 px-6
+                w-full py-4 px-6
                 rounded-2xl bg-gray-200 
                 outline-none text-gray-700 
                 placeholder-gray-500 font-medium 
@@ -193,17 +196,66 @@ function CompanyRegister() {
               "
             />
 
-            {/* Contraseña */}
+            {/* Email */}
+            <input
+              type="email"
+              placeholder="Correo Corporativo / Personal"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="new-email"
+              className="
+                text-sm lg:text-base
+                w-full py-4 px-6
+                rounded-2xl bg-gray-200 
+                outline-none text-gray-700 
+                placeholder-gray-500 font-medium 
+                focus:ring-2 focus:ring-green-400
+              "
+            />
+
+            {/* Departamento */}
+            <input
+              type="text"
+              placeholder="Departamento (Ej: IT, Ventas, Logística)"
+              value={departamento}
+              onChange={(e) => setDepartamento(e.target.value)}
+              className="
+                text-sm lg:text-base
+                w-full py-4 px-6
+                rounded-2xl bg-gray-200 
+                outline-none text-gray-700 
+                placeholder-gray-500 font-medium 
+                focus:ring-2 focus:ring-green-400
+              "
+            />
+
+            {/* ID Empresa */}
+            <input
+              type="text"
+              placeholder="ID / Código de la Empresa"
+              value={empresaId}
+              onChange={(e) => setEmpresaId(e.target.value)}
+              className="
+                text-sm lg:text-base
+                w-full py-4 px-6
+                rounded-2xl bg-gray-200 
+                outline-none text-gray-700 
+                placeholder-gray-500 font-medium 
+                focus:ring-2 focus:ring-green-400
+              "
+            />
+
+            {/* Password */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="Contraseña"
+                placeholder="Contraseña (8+ caracteres)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
                 className="
                   text-sm lg:text-base
-                  w-full py-4 lg:py-5 px-6
+                  w-full py-4 px-6
                   rounded-2xl bg-gray-200 
                   outline-none text-gray-700 
                   placeholder-gray-500 font-medium 
@@ -224,61 +276,7 @@ function CompanyRegister() {
               </button>
             </div>
 
-            {/* Tipo de Empresa (Menú Desplegable / Select) */}
-            <select
-              value={companyType}
-              onChange={(e) => setCompanyType(e.target.value)}
-              className="
-                text-sm lg:text-base
-                w-full py-4 lg:py-5 px-6
-                rounded-2xl bg-gray-200 
-                outline-none text-gray-700 font-medium 
-                focus:ring-2 focus:ring-green-400
-                appearance-none cursor-pointer
-              "
-            >
-              <option value="" disabled className="text-gray-500">
-                Selecciona el Tipo de Empresa
-              </option>
-              <option value="Tecnológico">Tecnológico</option>
-              <option value="Agrícola">Agrícola</option>
-              <option value="Industrial">Industrial</option>
-            </select>
-
-            {/* Cantidad de Empleados */}
-            <input
-              type="number"
-              min="1"
-              placeholder="Cantidad de empleados"
-              value={employeeCount}
-              onChange={(e) => setEmployeeCount(e.target.value)}
-              className="
-                text-sm lg:text-base
-                w-full py-4 lg:py-5 px-6
-                rounded-2xl bg-gray-200 
-                outline-none text-gray-700 
-                placeholder-gray-500 font-medium 
-                focus:ring-2 focus:ring-green-400
-              "
-            />
-
-            {/* Código Creado por la Empresa */}
-            <input
-              type="text"
-              placeholder="Crea el código para tu empresa (Ej: patito123)"
-              value={companyCode}
-              onChange={(e) => setCompanyCode(e.target.value)}
-              className="
-                text-sm lg:text-base
-                w-full py-4 lg:py-5 px-6
-                rounded-2xl bg-gray-200 
-                outline-none text-gray-700 
-                placeholder-gray-500 font-medium 
-                focus:ring-2 focus:ring-green-400
-              "
-            />
-
-            {/* Fuerza de la Contraseña */}
+            {/* Password Strength */}
             {password.length > 0 && (
               <p className="text-sm text-gray-600 -mt-2">
                 {password.length < 8 ? (
@@ -293,24 +291,22 @@ function CompanyRegister() {
               </p>
             )}
 
-            {/* Botón (Sin onClick conflictivo) */}
-            <button
+            {/* Button */}
+            <button 
               type="submit"
-              disabled={loading}
               className="
                 w-full py-4 lg:py-5
                 rounded-2xl 
                 bg-gradient-to-r from-green-800 to-green-500
                 text-white font-bold text-lg lg:text-xl
-                shadow-lg hover:opacity-90 transition
-                disabled:opacity-50
-                mt-2
+                shadow-lg hover:opacity-90 transition mt-2
               "
             >
-              {loading ? "Registrando organización..." : "Regístrate"}
+              Registrar Empleado
             </button>
 
-            <div className="text-center mt-2 py-3 px-4 rounded-2xl bg-green-100 text-green-700 font-semibold text-sm">
+            {/* Eco message */}
+            <div className="text-center mt-2 py-3 px-4 rounded-2xl bg-green-100 text-green-700 font-semibold">
               "small steps, big impact"
             </div>
           </form>
@@ -320,4 +316,4 @@ function CompanyRegister() {
   );
 }
 
-export default CompanyRegister;
+export default RegisterEmpleados;

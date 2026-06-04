@@ -23,8 +23,13 @@ const ClasificadorIA = () => {
     "Otros": { icon: "fa-ellipsis", tips: ["Busca manejo especial.", "Desechos peligrosos a centros.", "No mezcles por error.", "Repara antes de descartar."] }
   };
 
-  // Limpieza al desmontar el componente para liberar la cámara
+  // Cargar FontAwesome dinámicamente para asegurar que los iconos se muestren siempre
   useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    document.head.appendChild(link);
+    
     return () => {
       if (webcam) {
         webcam.stop();
@@ -62,13 +67,12 @@ const ClasificadorIA = () => {
       try {
         let loadedModel = model;
         if (!loadedModel) {
-          // Cargando modelo desde la URL de Teachable Machine
           loadedModel = await tmImage.load(URL_MODEL + "model.json", URL_MODEL + "metadata.json");
           setModel(loadedModel);
         }
 
-        const newWebcam = new tmImage.Webcam(350, 350, true); // width, height, flip
-        await newWebcam.setup(); // Aquí es donde suele pedir los permisos
+        const newWebcam = new tmImage.Webcam(350, 350, true);
+        await newWebcam.setup();
         await newWebcam.play();
         
         setWebcam(newWebcam);
@@ -122,80 +126,136 @@ const ClasificadorIA = () => {
   };
 
   return (
-    <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'Poppins, sans-serif' }}>
+    <div className="relative min-h-screen bg-[#EEF1E8] flex justify-center px-3 py-4 font-['Poppins'] overflow-x-hidden">
       <style>{`
-        .card-glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 30px; padding: 20px; border: 1px solid white; flex: 1; min-width: 300px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-left-color: #40916c; border-radius: 50%; animation: spin 1s linear infinite; }
+        .card-glass { background: #ffffff; border-radius: 24px; padding: 28px; border: 1px solid #e2e8f0; flex: 1; min-width: 320px; box-shadow: 0 10px 25px -5px rgba(40, 92, 70, 0.05), 0 8px 10px -6px rgba(40, 92, 70, 0.05); transition: all 0.3s ease; }
+        .spinner { width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.2); border-left-color: #52b788; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .manual-btn { background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 18px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; }
-        .manual-btn:hover { border-color: #40916c; background: #f0f7f4; transform: translateY(-2px); }
+        .manual-btn { background: #ffffff; border: 1px solid #e2e8f0; padding: 14px; border-radius: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s ease-in-out; }
+        .manual-btn:hover { border-color: #40916c; background: #f4fbf7; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(64, 145, 108, 0.08); }
+        .manual-btn.active { border-color: #40916c; background: #e8f5e9; font-weight: 600; box-shadow: 0 4px 12px rgba(64, 145, 108, 0.1); }
+        .btn-action { border: none; padding: 14px; border-radius: 16px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-action:hover { transform: translateY(-1px); filter: brightness(1.05); }
+        .back-arrow { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: #f4fbf7; color: #40916c; cursor: pointer; transition: all 0.2s ease; border: 1px solid #e2e8f0; }
+        .back-arrow:hover { background: #40916c; color: #ffffff; border-color: #40916c; transform: translateX(-3px); }
+        
+        /* Ajuste específico para forzar que el canvas de Teachable Machine ocupe el contenedor */
+        #webcam-container canvas { width: 100% !important; height: 100% !important; object-fit: cover; border-radius: 18px; }
       `}</style>
 
-      <header style={{ background: 'white', padding: '20px 0 0', textAlign: 'center' }}>
-        <h1 style={{ color: '#40916c', fontSize: '26px', fontWeight: 'bold' }}>Greenly Clasificador</h1>
-        <div style={{ height: '5px', background: '#40916c', marginTop: '15px' }}></div>
-      </header>
+      {/* FONDO IMAGEN INTERNO */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="/fondo.png"
+          alt="background"
+          className="w-full h-full object-cover opacity-90"
+        />
+      </div>
 
-      <div style={{ maxWidth: '1100px', width: '100%', margin: 'auto', padding: '20px', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+      {/* PANEL PRINCIPAL FLOTANTE (z-10 sobre el fondo, estructura unificada como la de Retos) */}
+      <div className="relative z-10 w-full max-w-[420px] lg:max-w-[1200px] min-h-screen flex flex-col items-center px-2 md:px-6 pt-2 pb-24">
         
-        {/* PANEL CÁMARA */}
-        <div className="card-glass">
-          <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#40916c', textAlign: 'center', marginBottom: '15px', letterSpacing: '1px' }}>CAPTURA DE RESIDUO</p>
+        {/* TARJETA BLANCA DE CONTENIDO PRINCIPAL */}
+        <div className="w-full lg:max-w-[1100px] bg-[#F8F8F8] rounded-[28px] overflow-hidden shadow-sm flex flex-col">
           
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', background: '#e8f5e9', borderRadius: '20px', overflow: 'hidden', border: '2px solid #b7e4c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {loading.active && (
-              <div style={{ position: 'absolute', inset: 0, background: 'rgba(26, 38, 27, 0.95)', zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                <div className="spinner" style={{ marginBottom: '10px' }}></div>
-                <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{loading.text}</div>
-                {loading.percent > 0 && <div style={{ fontSize: '24px' }}>{loading.percent}%</div>}
-              </div>
-            )}
-            
-            <div ref={webcamContainerRef} style={{ width: '100%', height: '100%', display: cameraActive ? 'block' : 'none' }} />
-            {photoPreview && <img src={photoPreview} alt="Captura" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }} />}
-            {!cameraActive && !photoPreview && <i className="fa-solid fa-camera" style={{ fontSize: '40px', color: '#b7e4c7' }}></i>}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px' }}>
-            {!cameraActive && !photoPreview && (
-              <button onClick={initCamera} style={{ background: '#40916c', color: 'white', border: 'none', padding: '12px', borderRadius: '15px', fontWeight: 600, cursor: 'pointer' }}>Activar Cámara</button>
-            )}
-            {cameraActive && (
-              <button onClick={capture} style={{ background: '#ff9f1c', color: 'white', border: 'none', padding: '12px', borderRadius: '15px', fontWeight: 600, cursor: 'pointer' }}>Analizar Ahora</button>
-            )}
-            {photoPreview && (
-              <button onClick={initCamera} style={{ background: '#73a580', color: 'white', border: 'none', padding: '12px', borderRadius: '15px', fontWeight: 600, cursor: 'pointer' }}>Reintentar</button>
-            )}
-          </div>
-        </div>
-
-        {/* PANEL MANUAL Y RESULTADOS */}
-        <div className="card-glass">
-          <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#40916c', textAlign: 'center', marginBottom: '15px' }}>RESULTADO Y SELECCIÓN</p>
-
-          {resultado && (
-            <div style={{ background: 'white', borderRadius: '20px', padding: '15px', marginBottom: '15px', borderLeft: '5px solid #40916c', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <i className={`fa-solid ${wasteData[resultado].icon}`} style={{ color: '#40916c' }}></i>
-                <h4 style={{ margin: 0 }}>{resultado}</h4>
-              </div>
-              <ul style={{ fontSize: '11px', paddingLeft: '15px', marginTop: '10px', color: '#4b5563' }}>
-                {wasteData[resultado].tips.map((tip, index) => (
-                  <li key={index} style={{ marginBottom: '4px' }}>{tip}</li>
-                ))}
-              </ul>
+          {/* HEADER INTEGRADO */}
+          <header style={{ background: '#ffffff', padding: '16px 24px', borderBottom: '1px solid #e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+            <div className="back-arrow" onClick={() => window.history.back()} title="Volver atrás">
+              <i className="fa-solid fa-arrow-left" style={{ fontSize: '18px' }}></i>
             </div>
-          )}
+            <h1 style={{ color: '#1b4332', fontSize: '22px', fontWeight: '700', margin: 0, textAlign: 'center', flex: 1, marginRight: '42px' }}>
+              Greenly <span style={{ color: '#40916c', fontWeight: '400' }}>Clasificador</span>
+            </h1>
+          </header>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            {Object.keys(wasteData).map((cat) => (
-              <div key={cat} className="manual-btn" onClick={() => setResultado(cat)} style={cat === "Otros" ? { gridColumn: 'span 2' } : {}}>
-                <div style={{ width: '30px', height: '30px', background: '#ecfdf5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className={`fa-solid ${wasteData[cat].icon}`} style={{ color: '#40916c', fontSize: '14px' }}></i>
-                </div>
-                <span style={{ fontSize: '12px' }}>{cat}</span>
+          {/* CUERPO DEL CLASIFICADOR */}
+          <div style={{ width: '100%', padding: '30px 24px', display: 'flex', gap: '24px', flexWrap: 'wrap', boxSizing: 'border-box' }}>
+            
+            {/* PANEL CÁMARA */}
+            <div className="card-glass">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', justifyContent: 'center' }}>
+                <i className="fa-solid fa-circle" style={{ fontSize: '8px', color: cameraActive ? '#52b788' : '#cbd5e1' }}></i>
+                <p style={{ fontSize: '12px', fontWeight: '700', color: '#40916c', margin: 0, letterSpacing: '1.5px', textTransform: 'uppercase' }}>Captura de Residuo</p>
               </div>
-            ))}
+              
+              <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', background: '#f4fbf7', borderRadius: '20px', overflow: 'hidden', border: '2px dashed #b7e4c7', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.02)' }}>
+                {loading.active && (
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(27, 67, 50, 0.96)', zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ffffff', padding: '20px', textAlign: 'center' }}>
+                    <div className="spinner" style={{ marginBottom: '16px' }}></div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', color: '#b7e4c7' }}>{loading.text}</div>
+                    {loading.percent > 0 && <div style={{ fontSize: '32px', fontWeight: '700', marginTop: '8px', color: '#ffffff' }}>{loading.percent}%</div>}
+                  </div>
+                )}
+                
+                <div id="webcam-container" ref={webcamContainerRef} style={{ width: '100%', height: '100%', display: cameraActive ? 'block' : 'none' }} />
+                {photoPreview && <img src={photoPreview} alt="Captura" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }} />}
+                {!cameraActive && !photoPreview && (
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                    <i className="fa-solid fa-camera-retro" style={{ fontSize: '48px', color: '#b7e4c7' }}></i>
+                    <span style={{ color: '#94a3b8', fontSize: '13px' }}>Cámara desactivada</span>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
+                {!cameraActive && !photoPreview && (
+                  <button className="btn-action" onClick={initCamera} style={{ background: '#40916c', color: '#ffffff', boxShadow: '0 4px 14px rgba(64, 145, 108, 0.3)' }}>
+                    <i className="fa-solid fa-power-off"></i> Activar Cámara
+                  </button>
+                )}
+                {cameraActive && (
+                  <button className="btn-action" onClick={capture} style={{ background: '#52b788', color: '#ffffff', boxShadow: '0 4px 14px rgba(82, 183, 136, 0.3)' }}>
+                    <i className="fa-solid fa-wand-magic-sparkles"></i> Analizar Ahora
+                  </button>
+                )}
+                {photoPreview && (
+                  <button className="btn-action" onClick={initCamera} style={{ background: '#ffffff', color: '#40916c', border: '2px solid #40916c' }}>
+                    <i className="fa-solid fa-arrow-rotate-left"></i> Reintentar Captura
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* PANEL MANUAL Y RESULTADOS */}
+            <div className="card-glass">
+              <p style={{ fontSize: '12px', fontWeight: '700', color: '#40916c', textAlign: 'center', marginBottom: '20px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Resultado y Selección</p>
+
+              {resultado && (
+                <div style={{ background: '#f4fbf7', borderRadius: '20px', padding: '20px', marginBottom: '24px', border: '1px solid #b7e4c7', boxShadow: '0 4px 12px rgba(40, 92, 70, 0.02)' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', borderBottom: '1px solid #e8f5e9', paddingBottom: '12px', marginBottom: '12px' }}>
+                    <div style={{ width: '36px', height: '36px', background: '#40916c', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                      <i className={`fa-solid ${wasteData[resultado].icon}`} style={{ fontSize: '16px' }}></i>
+                    </div>
+                    <h4 style={{ margin: 0, color: '#1b4332', fontSize: '18px', fontWeight: '600' }}>{resultado}</h4>
+                  </div>
+                  <ul style={{ fontSize: '13px', paddingLeft: '0', marginTop: '0', color: '#2d6a4f', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {wasteData[resultado].tips.map((tip, index) => (
+                      <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', lineHeight: '1.4' }}>
+                        <i className="fa-solid fa-check" style={{ color: '#52b788', marginTop: '3px', fontSize: '11px' }}></i>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {Object.keys(wasteData).map((cat) => (
+                  <div 
+                    key={cat} 
+                    className={`manual-btn ${resultado === cat ? 'active' : ''}`} 
+                    onClick={() => setResultado(cat)} 
+                    style={cat === "Otros" ? { gridColumn: 'span 2' } : {}}
+                  >
+                    <div style={{ width: '32px', height: '32px', background: resultado === cat ? '#ffffff' : '#f4fbf7', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      <i className={`fa-solid ${wasteData[cat].icon}`} style={{ color: '#40916c', fontSize: '14px' }}></i>
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#2d6a4f' }}>{cat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
