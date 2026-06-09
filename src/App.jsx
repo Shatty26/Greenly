@@ -1,6 +1,11 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import EmpresaNavbar from "./components/EmpresasNavbar"; 
+
+// Aquí corregimos la importación para usar tu componente "Cargando"
+import Cargando from "./components/Cargando"; 
+
 // Páginas
 import WelcomeScreen from "./pages/WelcomeScreen";
 import Login from "./pages/Login";
@@ -24,6 +29,29 @@ import DondeReciclar from "./pages/DondeReciclar";
 import TipoUsuario from "./pages/TipoUsuario";
 import ReportesRetos from "./pages/ReportesRetos";
 
+// Componente intermedio para controlar la pantalla de carga y luego redirigir
+function InitialLoader() {
+  const [showSplash, setShowSplash] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Muestra la pantalla de carga durante 3 segundos (3000ms)
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+      navigate("/welcomescreen"); // Redirige automáticamente a WelcomeScreen
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
+  // Aquí ya usamos correctamente <Cargando />
+  if (showSplash) {
+    return <Cargando />;
+  }
+
+  return null;
+}
+
 function Layout() {
   const location = useLocation();
   const currentPath = location.pathname.toLowerCase(); 
@@ -39,6 +67,9 @@ function Layout() {
     "/pricingscreen",
     "/tipousuario",
     "/companyregister",
+    "/registerempleados",
+    
+
   ];
 
   // Rutas que llevan el Navbar de Empresa
@@ -65,7 +96,10 @@ function Layout() {
       {renderNavbar()}
 
       <Routes>
-        <Route path="/" element={<WelcomeScreen />} />
+        {/* La ruta raíz "/" renderiza el cargador inicial */}
+        <Route path="/" element={<InitialLoader />} />
+        
+        <Route path="/welcomescreen" element={<WelcomeScreen />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/home" element={<Home />} />

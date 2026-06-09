@@ -158,7 +158,7 @@ function RegisterEmpleados() {
           "
         >
           <h2 className="text-center text-[36px] lg:text-[45px] font-extrabold text-green-500">
-            Registro Colaborador
+            Registro Empleado
           </h2>
 
           <p className="text-center text-sm lg:text-base text-gray-600 mt-1 mb-8">
