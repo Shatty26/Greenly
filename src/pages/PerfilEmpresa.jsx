@@ -17,7 +17,7 @@ function PerfilEmpresa() {
   const [error, setError] = useState("");
   
   const seleccionarFotoAleatoria = () => {
-    const cantidadImagenes = 8;
+    const cantidadImagenes = 10;
     const numeroAleatorio = Math.floor(Math.random() * cantidadImagenes) + 1;
     return `/src/imgEco/ecoimg${numeroAleatorio}.jfif`;
   };

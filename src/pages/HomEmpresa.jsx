@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { auth, db } from "../firebase/config";
 // Importamos 'orderBy' y 'limit' para resolver la lectura eficiente del último cálculo
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 
 function HomEmpresa() {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ function HomEmpresa() {
     }
   }, []);
 
-  // 2. Efecto principal conectado a Firestore
+  // 2. Efecto principal conectado a Firestore (Corregido para leer tus datos)
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
@@ -58,7 +58,7 @@ function HomEmpresa() {
 
         if (empresaSnapshot.exists()) {
           const empresaData = empresaSnapshot.data();
-          setUsername(empresaData.nombreEmpresa || empresaData.email?.split("@")[0] || "Empresa");
+          setUsername(empresaData.nombreEmpresa || empresaData.nombre || empresaData.email?.split("@")[0] || "Empresa");
           setLimiteEmpleados(Number(empresaData.cantidadEmpleados) || 0);
           codigoDeLaEmpresa = empresaData.codigoEmpresa || ""; 
         }
@@ -94,33 +94,41 @@ function HomEmpresa() {
           setTotalEcoScore(0);
         }
 
-        // C. Obtener el cálculo de emisiones de la empresa (Huella de la infraestructura/organización)
+        // C. Obtener el cálculo de emisiones de la empresa de forma segura
+        // Se quita 'orderBy' de la consulta de Firebase para evitar la necesidad de configurar índices compuestos
         const qCalculadora = query(
           collection(db, "calculadora"),
           where("uid", "==", user.uid),
-          orderBy("fecha", "desc"),
-          limit(1)
+          where("tipo", "==", "empresa")
         );
 
         const snapshot = await getDocs(qCalculadora);
         let emisionEmpresaBase = 0;
         
         if (!snapshot.empty) {
-          const ultimoRegistro = snapshot.docs[0].data();
-          emisionEmpresaBase = ultimoRegistro.totalAnual || 0;
-          setTotalMensual(ultimoRegistro.totalMensual || 0);
+          // Ordenamos los documentos manualmente por marca de tiempo en JavaScript
+          const documentos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          documentos.sort((a, b) => {
+            const fechaA = a.fecha?.seconds || 0;
+            const fechaB = b.fecha?.seconds || 0;
+            return fechaB - fechaA; // El más reciente primero
+          });
+
+          const ultimoRegistro = documentos[0];
+          emisionEmpresaBase = Number(ultimoRegistro.totalAnual) || 0;
+          setTotalMensual(Number(ultimoRegistro.totalMensual) || 0);
           setTotalAnual(emisionEmpresaBase);
         } else {
           setTotalMensual(0);
           setTotalAnual(0);
         }
 
-        // D. CALCULAR EL IMPACTO AMBIENTAL TOTAL DE LOS EMPLEADOS
-        // Buscamos en la calculadora global los registros vinculados al código de la empresa
+        // D. CALCULAR EL IMPACTO AMBIENTAL TOTAL DE LOS EMPLEADOS (Calculado dinámicamente)
         if (codigoDeLaEmpresa !== "") {
           const qCalculosEmpleados = query(
             collection(db, "calculadora"),
-            where("codigoEmpresa", "==", codigoDeLaEmpresa) // Filtro por el código en común
+            where("codigoEmpresa", "==", codigoDeLaEmpresa),
+            where("tipo", "==", "empleado") // Asegura recolectar datos únicos de empleados
           );
 
           const calculosSnapshot = await getDocs(qCalculosEmpleados);
@@ -190,29 +198,27 @@ function HomEmpresa() {
         <div className="h-1 w-28 bg-emerald-500 rounded-full -mt-4 mb-8"></div>
 
         {/* TARJETA PRINCIPAL (PANEL DE RESULTADOS) */}
-        {/* TARJETA PRINCIPAL (PANEL DE RESULTADOS) - TU DISEÑO ORIGINAL AHORA FUNCIONAL */}
-<div className="relative overflow-hidden rounded-3xl shadow-xl mb-8">
-  <img src="/img/cuadroVerde.png" alt="dashboard" className="w-full h-[250px] md:h-[320px] object-cover" />
-  <img src="/img/manocontierra.png" alt="decoracion" className="absolute right-4 top-5 w-[150px] md:w-[260px] pointer-events-none" />
-  <div className="absolute inset-0 p-6 md:p-10 text-white flex flex-col justify-between">
-    <div>
-      <p className="text-lg font-semibold opacity-90">Huella Total de la Empresa</p>
-      <h2 className="text-5xl md:text-8xl font-extrabold">
-        {loading ? "..." : totalAnual.toFixed(2)}
-      </h2>
-      <p className="text-lg md:text-2xl">Toneladas CO₂ / Año</p>
-    </div>
-    <div>
-      <p className="text-sm md:text-lg">
-        Emisiones mensuales:{" "}
-        <span className="font-bold ml-2">
-          {loading ? "..." : totalMensual.toFixed(1)} kg CO₂
-        </span>
-      </p>
-    </div>
-  </div>
-</div>
-
+        <div className="relative overflow-hidden rounded-3xl shadow-xl mb-8">
+          <img src="/img/cuadroVerde.png" alt="dashboard" className="w-full h-[250px] md:h-[320px] object-cover" />
+          <img src="/img/manocontierra.png" alt="decoracion" className="absolute right-4 top-5 w-[150px] md:w-[260px] pointer-events-none" />
+          <div className="absolute inset-0 p-6 md:p-10 text-white flex flex-col justify-between">
+            <div>
+              <p className="text-lg font-semibold opacity-90">Huella Total de la Empresa</p>
+              <h2 className="text-5xl md:text-8xl font-extrabold">
+                {loading ? "..." : totalAnual.toFixed(2)}
+              </h2>
+              <p className="text-lg md:text-2xl">Toneladas CO₂ / Año</p>
+            </div>
+            <div>
+              <p className="text-sm md:text-lg">
+                Emisiones mensuales:{" "}
+                <span className="font-bold ml-2">
+                  {loading ? "..." : totalMensual.toFixed(1)} kg CO₂
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
 
@@ -224,7 +230,7 @@ function HomEmpresa() {
             <p className="text-gray-500 mt-2">Puntos ambientales acumulados</p>
           </div>
 
-          {/* TARJETA 2: EMPLEADOS REGISTRADOS (FORMATO EJ. 8/20) */}
+          {/* TARJETA 2: EMPLEADOS REGISTRADOS */}
           <div className="bg-white rounded-3xl shadow-lg p-6">
             <h3 className="text-gray-500 font-medium">Empleados registrados</h3>
             <p className="text-4xl font-bold text-green-700 mt-3">

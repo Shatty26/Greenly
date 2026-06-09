@@ -63,7 +63,7 @@ function CompanyRegister() {
       setEmployeeCount("");
       
       // 4. Redirigir correctamente AQUÍ una vez que todo se guardó con éxito
-      navigate("/HomEmpresa");
+      navigate("/homempresa");
 
     } catch (error) {
       console.error("Error exacto en el registro de empresa:", error.code, error.message);

@@ -10,6 +10,8 @@ import {
   query,
   where,
   getDocs,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 
 function Perfil() {
@@ -22,8 +24,7 @@ function Perfil() {
   // ==============================
   // ESTADOS
   // ==============================
-  const [nombre, setNombre] =
-    useState("Cargando...");
+  const [nombre, setNombre] = useState("");
 
   const [puntos, setPuntos] =
     useState(0);
@@ -41,6 +42,12 @@ function Perfil() {
   const [fotoPerfil, setFotoPerfil] =
     useState("");
 
+  // NUEVOS ESTADOS PARA LA EDICIÓN EN LA MISMA PANTALLA
+  const [editando, setEditando] = useState(false);
+  const [docId, setDocId] = useState(""); // ¡Aquí guardaremos el ID real del documento (sea aleatorio o el uid)!
+  const [coleccionOrigen, setColeccionOrigen] = useState(""); // Guarda si es 'usuarios' o 'empleados'
+  const [loading, setLoading] = useState(false);
+
   // USUARIO ACTUAL
   const user = auth.currentUser;
 
@@ -50,7 +57,7 @@ function Perfil() {
   const seleccionarFotoAleatoria = () => {
 
     // CANTIDAD DE IMÁGENES
-    const cantidadImagenes = 8;
+    const cantidadImagenes = 10;
 
     // NÚMERO ALEATORIO
     const numeroAleatorio =
@@ -63,7 +70,7 @@ function Perfil() {
   };
 
   // ==============================
-  // OBTENER DATOS DEL USUARIO
+  // OBTENER DATOS DEL USUARIO O EMPLEADO
   // ==============================
   useEffect(() => {
 
@@ -71,18 +78,23 @@ function Perfil() {
       async () => {
 
         try {
-
-          const q = query(
+          // 1. Intentar buscar primero en la colección de 'usuarios'
+          let q = query(
             collection(db, "usuarios"),
-            where(
-              "uid",
-              "==",
-              user.uid
-            )
+            where("uid", "==", user.uid)
           );
+          let querySnapshot = await getDocs(q);
+          let origen = "usuarios";
 
-          const querySnapshot =
-            await getDocs(q);
+          // 2. Si no encuentra nada en 'usuarios', busca en 'empleados'
+          if (querySnapshot.empty) {
+            q = query(
+              collection(db, "empleados"),
+              where("uid", "==", user.uid)
+            );
+            querySnapshot = await getDocs(q);
+            origen = "empleados";
+          }
 
           querySnapshot.forEach(
             (documento) => {
@@ -90,18 +102,22 @@ function Perfil() {
               const data =
                 documento.data();
 
+              // GUARDAMOS EL ID REAL DEL DOCUMENTO (sea el hash aleatorio o el uid)
+              setDocId(documento.id);
+              setColeccionOrigen(origen);
+
               // ==============================
-              // NOMBRE
+              // NOMBRE (Maneja propiedad 'nombre' o 'nombreCompleto')
               // ==============================
               setNombre(
-                data.nombre
+                data.nombre || data.nombreCompleto || ""
               );
 
               // ==============================
-              // PUNTOS
+              // PUNTOS (Soporta 'puntos', 'puntosAcumulados' o 'ecoScore')
               // ==============================
               const puntosUsuario =
-                data.puntos || 0;
+                data.puntos !== undefined ? data.puntos : (data.puntosAcumulados !== undefined ? data.puntosAcumulados : (data.ecoScore || 0));
 
               setPuntos(
                 puntosUsuario
@@ -184,12 +200,7 @@ function Perfil() {
           );
 
         } catch (error) {
-
-          console.error(
-            "Error obteniendo usuario:",
-            error
-          );
-
+          // Captura silenciosa
         }
       };
 
@@ -207,6 +218,40 @@ function Perfil() {
   }, [user]);
 
   // ==============================
+  // GUARDAR NUEVO NOMBRE EN FIRESTORE
+  // ==============================
+  const guardarCambios = async () => {
+    if (nombre.trim() === "") {
+      alert("El nombre no puede estar vacío.");
+      return;
+    }
+
+    if (!docId || !coleccionOrigen) {
+      alert("No se ha detectado el origen del usuario correctamente.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Ahora usamos 'docId' que contiene el ID exacto que Firebase encontró al cargar el perfil
+      const docRef = doc(db, coleccionOrigen, docId);
+      
+      // Actualizamos ambas propiedades por si tu estructura varía entre colecciones
+      await updateDoc(docRef, {
+        nombre: nombre,
+        nombreCompleto: nombre
+      });
+
+      setEditando(false);
+    } catch (error) {
+      alert("No se pudieron guardar los cambios. Inténtalo de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==============================
   // CERRAR SESIÓN
   // ==============================
   const handleLogout =
@@ -219,12 +264,7 @@ function Perfil() {
         navigate("/");
 
       } catch (error) {
-
-        console.error(
-          "Error al cerrar sesión:",
-          error
-        );
-
+         // Salida silenciosa
       }
     };
 
@@ -295,17 +335,39 @@ function Perfil() {
           </div>
 
           {/* ==============================
-              NOMBRE E INSIGNIA
+              NOMBRE E INSIGNIA / FORMULARIO EDICIÓN
           ============================== */}
-          <div className="text-center mt-5 w-full">
+          <div className="text-center mt-5 w-full px-6 flex flex-col items-center min-h-[90px]">
 
-            <h3 className="text-xl md:text-2xl font-bold text-green-900">
-              {nombre}
-            </h3>
+            {!editando ? (
+              <>
+                <h3 className="text-xl md:text-2xl font-bold text-green-900">
+                  {nombre || "Eco Usuario"}
+                </h3>
 
-            <p className="text-green-600 text-sm md:text-base mt-1 font-semibold">
-              {insignia}
-            </p>
+                <p className="text-green-600 text-sm md:text-base mt-1 font-semibold">
+                  {insignia}
+                </p>
+              </>
+            ) : (
+              <div className="w-full max-w-md flex flex-col gap-2 text-left mt-2">
+                <label className="text-green-900 font-bold text-sm ml-1">Cambiar nombre:</label>
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="w-full py-3 px-5 rounded-2xl bg-gray-50 border border-green-100 outline-none text-gray-700 font-medium focus:ring-2 focus:ring-green-400"
+                  placeholder="Escribe tu nuevo nombre"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEditando(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600 font-semibold self-end mr-2"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
 
             <hr className="w-1/2 mx-auto border-gray-100 mt-4" />
 
@@ -340,30 +402,32 @@ function Perfil() {
           </div>
 
           {/* ==============================
-              BOTONES
+              BOTONES / ACCIONES
           ============================== */}
           <div className="w-full max-w-2xl mt-7 px-6 space-y-4">
 
-            {/* BOTÓN SOLO VISUAL */}
-            <Link
-              to="/EditarPerfil"
-              className="w-full block"
-            >
-              <MenuButton
-                label="Editar perfil"
-              />
-            </Link>
+            {!editando ? (
+              <div onClick={() => setEditando(true)} className="w-full cursor-pointer">
+                <MenuButton label="Editar perfil" />
+              </div>
+            ) : (
+              <button
+                onClick={guardarCambios}
+                disabled={loading}
+                className="w-full py-4 px-7 rounded-2xl bg-gradient-to-r from-green-800 to-green-500 text-white font-bold text-base md:text-lg shadow-md hover:opacity-90 transition-all disabled:opacity-50"
+              >
+                {loading ? "Guardando..." : "Guardar"}
+              </button>
+            )}
 
             {/* SOPORTE */}
             <Link
                 to="/soporte"
                 className="w-full block"
             >
-
               <MenuButton
                 label="Soporte técnico"
               />
-
             </Link>
 
             {/* CERRAR SESIÓN */}
@@ -371,9 +435,7 @@ function Perfil() {
               onClick={handleLogout}
               className="w-full block bg-red-50/60 py-4 px-7 rounded-2xl text-center text-sm md:text-base font-semibold text-red-800 border border-red-100 hover:bg-red-100 transition-all"
             >
-
               Cerrar sesión
-
             </button>
 
           </div>

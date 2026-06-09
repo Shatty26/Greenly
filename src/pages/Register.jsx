@@ -257,7 +257,7 @@ function Register() {
                 text-white font-bold text-lg lg:text-xl
                 shadow-lg hover:opacity-90 transition
               "
-              onClick={() => navigate("/Home")}
+              onClick={() => navigate("/home")}
             >
               Regístrate
             </button>

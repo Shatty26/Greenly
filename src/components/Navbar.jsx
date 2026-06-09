@@ -18,7 +18,7 @@ function Navbar() {
         {/* Home */}
         <Link to="/home" className="flex items-center justify-center">
           <img
-            src="/img/casa.png"
+            src="/img/home.png"
             alt="home"
             className={`w-10 h-10 sm:w-10 sm:h-12 ${
               isActive("/home") ? "opacity-100" : "opacity-50"
@@ -38,8 +38,8 @@ function Navbar() {
         {/* Chabot */}
         <Link to="/Chatbot" className="flex items-center justify-center">
           <img
-            src="/img/chat-ia.png"
-            alt="retos"
+            src="/img/chabot.png"
+            alt="chabot"
             className={`w-10 h-10 sm:w-10 sm:h-12 ${
               isActive("/Chatbot") ? "opacity-100" : "opacity-50"
             }`}
@@ -49,7 +49,7 @@ function Navbar() {
         {/* Perfil */}
         <Link to="/perfil" className="flex items-center justify-center">
          <img
-            src="/img/usuario.png"
+            src="/img/perfil.png"
             alt="profile"
             className={`w-10 h-10 sm:w-11 sm:h-12 ${
                 isActive("/perfil") ? "opacity-100" : "opacity-50"

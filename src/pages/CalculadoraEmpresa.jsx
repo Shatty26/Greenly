@@ -23,15 +23,20 @@ function CalculadoraEmpresa() {
   // Inputs del usuario
   const [kwh, setKwh] = useState("");
   const [combustible, setCombustible] = useState("");
-  const [aguaLitros, setAguaLitros] = useState(""); // 👈 Cambiado a litros
+  const [aguaLitros, setAguaLitros] = useState(""); 
   const [papel, setPapel] = useState("");
+  
+  // Inputs específicos por rubro
   const [materiaPrima, setMateriaPrima] = useState(""); 
   const [servidores, setServidores] = useState("");     
+  const [hectareas, setHectareas] = useState("");       
 
   // Resultados calculados expuestos en la interfaz
   const [resultadoMensual, setResultadoMensual] = useState(0);
   const [resultadoAnual, setResultadoAnual] = useState(0);
+  const [nivelImpacto, setNivelImpacto] = useState({ texto: "", color: "", bg: "" });
   const [listaRecomendaciones, setListaRecomendaciones] = useState([]);
+  const [datosGrafico, setDatosGrafico] = useState([]);
 
   // =========================================
   // DETECTAR EL RUBRO AUTOMÁTICAMENTE
@@ -59,61 +64,125 @@ function CalculadoraEmpresa() {
   }, [user]);
 
   // =========================================
+  // COMPORTAMIENTO MÁS / MENOS (PASO A PASO)
+  // =========================================
+  const modificarValor = (setter, valorActual, cantidad, esIncremento) => {
+    const actual = parseFloat(valorActual) || 0;
+    if (esIncremento) {
+      setter((actual + cantidad).toString());
+    } else {
+      if (actual >= cantidad) setter((actual - cantidad).toString());
+    }
+  };
+
+  // =========================================
   // LOGICA MATEMÁTICA Y GENERADOR DE CONSEJOS
   // =========================================
   const procesarMetricasYAvance = () => {
-    // Factores de emisión estándar (en kg de CO2)
+    // Factores de emisión
     const factorLuz = 0.35;
     const factorCombustible = 2.31;
-    const factorAguaM3 = 0.25; // Factor por cada metro cúbico
+    const factorAguaM3 = 0.25; 
     const factorPapel = 1.2;
-    const factorEspecial = rubroEmpresa === "Tecnológico" ? 0.45 : 1.8;
 
     const numKwh = Number(kwh) || 0;
     const numCombustible = Number(combustible) || 0;
-    
-    // Convertimos los litros ingresados a metros cúbicos para la fórmula (Litros / 1000)
     const numAguaM3 = (Number(aguaLitros) || 0) / 1000; 
-    
-    const numPapel = Number(papel) || 0;
-    const numEspecial = Number(materiaPrima) || Number(servidores) || 0;
+    const numPapel = rubroEmpresa === "Tecnológico" ? (Number(papel) || 0) : 0;
 
-    // 1. Cálculo Mensual (Kilogramos de CO2)
-    const totalMensualKg = 
-      (numKwh * factorLuz) + 
-      (numCombustible * factorCombustible) + 
-      (numAguaM3 * factorAguaM3) + 
-      (numPapel * factorPapel) +
-      (numEspecial * factorEspecial);
+    let numEspecial = 0;
+    let factorEspecial = 0;
+    let nombreEspecial = "Sector";
 
-    // 2. Cálculo Anual Proyectado (Toneladas de CO2)
+    if (rubroEmpresa === "Tecnológico") {
+      numEspecial = Number(servidores) || 0;
+      factorEspecial = 0.45;
+      nombreEspecial = "Servidores";
+    } else if (rubroEmpresa === "Industrial") {
+      numEspecial = Number(materiaPrima) || 0;
+      factorEspecial = 1.8;
+      nombreEspecial = "Materia Prima";
+    } else if (rubroEmpresa === "Agrícola") {
+      numEspecial = Number(hectareas) || 0;
+      factorEspecial = 1.2;
+      nombreEspecial = "Hectáreas";
+    }
+
+    // Calcular CO2 individual para el gráfico
+    const co2Luz = numKwh * factorLuz;
+    const co2Combustible = numCombustible * factorCombustible;
+    const co2Agua = numAguaM3 * factorAguaM3;
+    const co2Papel = numPapel * factorPapel;
+    const co2Especial = numEspecial * factorEspecial;
+
+    const totalMensualKg = co2Luz + co2Combustible + co2Agua + co2Papel + co2Especial;
     const totalAnualToneladas = (totalMensualKg * 12) / 1000;
 
     setResultadoMensual(totalMensualKg);
     setResultadoAnual(totalAnualToneladas);
 
-    // 3. Crear consejos personalizados de sustentabilidad
+    // 1. Determinar Nivel de Impacto Corporativo
+    let impacto = { texto: "Bajo", color: "text-green-600", bg: "bg-green-50 border-green-200" };
+    if (totalMensualKg > 500 && totalMensualKg <= 2000) {
+      impacto = { texto: "Moderado", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" };
+    } else if (totalMensualKg > 2000) {
+      impacto = { texto: "Alto", color: "text-red-600", bg: "bg-red-50 border-red-200" };
+    }
+    setNivelImpacto(impacto);
+
+    // 2. Preparar datos para el gráfico nativo
+    const itemsGrafico = [
+      { nombre: "Electricidad", valor: co2Luz },
+      { nombre: "Combustible", valor: co2Combustible },
+      { nombre: "Agua", valor: co2Agua },
+    ];
+    if (rubroEmpresa === "Tecnológico") {
+      itemsGrafico.push({ nombre: "Papel", valor: co2Papel });
+    }
+    itemsGrafico.push({ nombre: nombreEspecial, valor: co2Especial });
+
+    // Encontrar el valor más alto para sacar porcentajes visuales de las barras
+    const valorMaximo = Math.max(...itemsGrafico.map(i => i.valor), 1);
+    const graficoProcesado = itemsGrafico.map(item => ({
+      ...item,
+      porcentajeBarra: Math.min((item.valor / valorMaximo) * 100, 100)
+    }));
+    
+    // Ordenar de mayor a menor consumo para mostrar el problema primero
+    graficoProcesado.sort((a, b) => b.valor - a.valor);
+    setDatosGrafico(graficoProcesado);
+
+    // 3. Generar Recomendaciones Inteligentes Basadas en lo que salió más alto
     const consejos = [];
-    if (numKwh > 1000) {
-      consejos.push("💡 Cambia el 100% de tus bombillas corporativas a tecnología LED de alta eficiencia y configura apagados automáticos de noche.");
-    }
-    if (numCombustible > 200) {
-      consejos.push("🚗 Incentiva el 'Carpos' (viajes compartidos) entre tus colaboradores o implementa un día fijo de Home Office a la semana.");
-    }
-    if (Number(aguaLitros) > 15000) {
-      consejos.push("💧 Alto consumo hídrico. Revisa si existen fugas invisibles en los baños e instala aireadores de agua en los grifos para reducir el caudal.");
-    }
-    if (numPapel > 10) {
-      consejos.push("📄 Migra todos tus procesos de facturación, contratos y minutas de junta a herramientas 100% digitales.");
+    const mayorOfensor = graficoProcesado[0];
+
+    if (mayorOfensor && mayorOfensor.valor > 0) {
+      consejos.push(`⚠️ **Prioridad Crítica:** Tu mayor fuente de emisión es **${mayorOfensor.nombre}** (${mayorOfensor.valor.toFixed(1)} kg CO₂). Aquí debes concentrar tus esfuerzos de mejora urgentes.`);
     }
 
-    // Consejos basados estrictamente en el Rubro comercial
+    // Consejos condicionales tradicionales
+    if (numKwh > 800) {
+      consejos.push("💡 Cambia luminarias a LED de alta eficiencia y configura sensores de movimiento en áreas de poco tráfico corporativo.");
+    }
+    if (numCombustible > 150) {
+      consejos.push("🚗 Optimiza las rutas de distribución o establece incentivos económicos para los empleados que usen transporte público o bicicleta.");
+    }
+    if (Number(aguaLitros) > 12000) {
+      consejos.push("💧 El consumo de agua es elevado. Coloca reguladores de caudal en grifos y revisa llaves de paso para prevenir fugas.");
+    }
+
+    // Consejos por rubro
     if (rubroEmpresa === "Tecnológico") {
-      consejos.push("⚡ Tip TI: Elige servidores cloud que posean certificados de carbono neutralidad o 'Green Web Hosting'.");
+      if (numPapel > 8) {
+        consejos.push("📄 Reduce las resmas implementando firmas digitales legalizadas (como DocuSign) para eliminar contratos físicos.");
+      }
+      if (numEspecial > 5) {
+        consejos.push("⚡ Evalúa proveedores Cloud como AWS, Google o Azure que garanticen infraestructuras operadas al 100% con energías renovables.");
+      }
     } else if (rubroEmpresa === "Industrial") {
-      consejos.push("🏭 Tip Fabril: Ejecuta auditorías de pérdidas de calor en calderas e implementa la separación estricta de residuos.");
+      consejos.push("🏭 Recupera el calor residual de tus procesos mecánicos y rediseña los empaques para reducir el tonelaje de residuos finales.");
     } else if (rubroEmpresa === "Agrícola") {
-      consejos.push("🌱 Tip del Campo: Adopta sistemas de riego tecnificado por goteo para mitigar el uso de bombas eléctricas.");
+      consejos.push("🌱 Integra fertilizantes orgánicos de liberación lenta para mitigar la huella de compuestos nitrogenados en el suelo.");
     }
 
     setListaRecomendaciones(consejos);
@@ -137,16 +206,19 @@ function CalculadoraEmpresa() {
         datosOrigen: {
           kwhMensual: Number(kwh) || 0,
           combustibleLitros: Number(combustible) || 0,
-          aguaLitros: Number(aguaLitros) || 0, // Guardamos los litros directamente
-          papelResmas: Number(papel) || 0,
-          adicionalSector: Number(materiaPrima) || Number(servidores) || 0
+          aguaLitros: Number(aguaLitros) || 0, 
+          papelResmas: rubroEmpresa === "Tecnológico" ? (Number(papel) || 0) : 0,
+          servidoresActivos: rubroEmpresa === "Tecnológico" ? (Number(servidores) || 0) : 0,
+          materiaPrimaToneladas: rubroEmpresa === "Industrial" ? (Number(materiaPrima) || 0) : 0,
+          hectareasCultivo: rubroEmpresa === "Agrícola" ? (Number(hectareas) || 0) : 0
         },
-        totalMensual: resultadoMensual,
-        totalAnual: resultadoAnual
+        totalMensual: parseFloat(resultadoMensual.toFixed(2)),
+        totalAnual: parseFloat(resultadoAnual.toFixed(2)),
+        rangoImpacto: nivelImpacto.texto
       });
 
       setExito(true);
-      setTimeout(() => navigate("/HomEmpresa"), 3500);
+      setTimeout(() => navigate("/HomEmpresa"), 3000);
 
     } catch (err) {
       console.error("Error al guardar la huella:", err);
@@ -156,192 +228,332 @@ function CalculadoraEmpresa() {
     }
   };
 
+  const handleBack = () => {
+    setPaso((p) => Math.max(p - 1, 1));
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-[Poppins]">
-        <p className="text-emerald-700 font-bold animate-pulse">Cargando perfil ecológico empresarial...</p>
+      <div className="min-h-screen bg-green-50 flex items-center justify-center font-[Poppins]">
+        <p className="text-green-800 font-bold animate-pulse">Cargando perfil ecológico empresarial...</p>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen w-full bg-gradient-to-b from-slate-50 to-emerald-50 font-[Poppins] flex items-center justify-center p-4 md:p-10">
-      <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden border border-emerald-100">
+    <main className="fondoCal min-h-screen flex justify-center items-center p-3 sm:p-6">
+      <div className="bg-white rounded-[30px] shadow-2xl p-5 sm:p-8 w-full max-w-2xl min-h-[650px] flex flex-col justify-between">
         
-        {/* ENCABEZADO */}
-        <div className="bg-gradient-to-r from-emerald-700 to-teal-600 p-8 text-white text-center">
-          <span className="bg-white/20 text-xs px-3 py-1 rounded-full font-bold tracking-wider uppercase">
-            Rubro: {rubroEmpresa}
-          </span>
-          <h1 className="text-2xl md:text-3xl font-bold mt-2">Calculadora de Impacto</h1>
-          <p className="text-emerald-100 text-sm font-medium mt-1">Evaluación ambiental de {nombreEmpresa}</p>
+        <div>
+          {/* HEADER */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 items-center justify-between mb-6">
+            {paso < 3 ? (
+              <button
+                onClick={handleBack}
+                disabled={paso === 1}
+                className={`w-full sm:w-auto px-5 py-3 rounded-2xl font-black text-xl transition flex items-center justify-center ${
+                  paso === 1
+                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                    : "bg-green-100 text-green-800 hover:bg-green-200"
+                }`}
+              >
+                ←
+              </button>
+            ) : (
+              <div className="w-full sm:w-auto"></div>
+            )}
 
-          <div className="flex justify-center gap-2 mt-5">
-            <span className={`h-2 rounded-full transition-all ${paso === 1 ? 'w-8 bg-white' : 'w-2 bg-white/40'}`}></span>
-            <span className={`h-2 rounded-full transition-all ${paso === 2 ? 'w-8 bg-white' : 'w-2 bg-white/40'}`}></span>
-            <span className={`h-2 rounded-full transition-all ${paso === 3 ? 'w-8 bg-white' : 'w-2 bg-white/40'}`}></span>
-            <span className={`h-2 rounded-full transition-all ${paso === 4 ? 'w-8 bg-white' : 'w-2 bg-white/40'}`}></span>
+            {paso < 3 && (
+              <button
+                onClick={() => navigate("/HomEmpresa")}
+                className="w-full sm:w-auto bg-gray-100 px-5 py-3 rounded-2xl font-bold text-green-900 hover:bg-gray-200 transition"
+              >
+                Cancelar
+              </button>
+            )}
           </div>
-        </div>
 
-        {/* CUERPO DEL FORMULARIO POR PASOS */}
-        <div className="p-6 md:p-10">
+          {/* INDICADOR DE RUBRO */}
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-center mb-4">
+            <span className="text-xs uppercase tracking-wider text-green-600 font-black">Organización Auditada</span>
+            <h3 className="text-xl font-black text-green-900">{rubroEmpresa}</h3>
+          </div>
+
+          {/* BARRA DE PROGRESO */}
+          <div className="mb-8">
+            <div className="flex justify-between text-xs font-bold text-green-700 mb-2">
+              <span>Evaluando: {nombreEmpresa}</span>
+              <span>Paso {paso} de 3</span>
+            </div>
+            <div className="w-full h-3 bg-green-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-800 to-green-500 transition-all duration-500"
+                style={{ width: `${(paso / 3) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* CUERPO CENTRAL */}
           {exito ? (
-            <div className="text-center py-8 space-y-4">
-              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-4xl mx-auto shadow-inner">✓</div>
-              <h2 className="text-2xl font-bold text-gray-800">¡Huella Actualizada!</h2>
-              <p className="text-gray-500 max-w-sm mx-auto">Tus registros mensuales y anuales ya se visualizan en la pantalla principal de tu empresa.</p>
+            <div className="text-center py-8 space-y-4 flex flex-col items-center justify-center flex-1">
+              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl shadow-inner">✓</div>
+              <h2 className="text-2xl font-black text-green-900">¡Huella Actualizada!</h2>
+              <p className="text-gray-500 max-w-sm mx-auto text-center text-sm">
+                Tus registros mensuales, anuales y nivel de impacto se guardaron correctamente en tu base de datos.
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
-              {error && <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 font-medium">{error}</div>}
+              {error && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 font-medium text-center text-sm">
+                  {error}
+                </div>
+              )}
 
-              {/* PASO 1: ENERGÍA TRANSVERSAL */}
+              {/* PASO 1: ENERGÍA GENERAL */}
               {paso === 1 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-100 pb-2">
-                    <h2 className="text-lg font-bold text-emerald-900">Métricas Principales</h2>
-                    <p className="text-gray-400 text-xs font-medium">Consumo global de energía y transporte de la firma</p>
+                <div className="flex flex-col items-center justify-center space-y-6">
+                  <div className="text-center">
+                    <h2 className="text-2xl sm:text-4xl font-black text-green-900 mb-2">Métricas Principales</h2>
+                    <p className="text-gray-500 text-sm">Consumo global de energía y logística de transporte</p>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-gray-700 font-semibold text-sm">¿Cuántos kWh de electricidad se consumieron en las sedes este mes?</label>
-                    <input 
-                      type="number" value={kwh} onChange={(e) => setKwh(e.target.value)}
-                      placeholder="Ej: 1400" className="w-full py-4 px-5 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                      required
-                    />
+                  {/* ELECTRICIDAD */}
+                  <div className="w-full flex flex-col gap-2">
+                    <label className="text-green-900 font-bold text-sm">¿Cuántos kWh de electricidad se consumieron este mes?</label>
+                    <div className="w-full flex flex-row items-center gap-2">
+                      <button type="button" onClick={() => modificarValor(setKwh, kwh, 100, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
+                      <input 
+                        type="number" value={kwh} onChange={(e) => setKwh(e.target.value)}
+                        onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                        onWheel={(e) => e.target.blur()}
+                        placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                      />
+                      <button type="button" onClick={() => modificarValor(setKwh, kwh, 100, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-gray-700 font-semibold text-sm">¿Cuántos litros de combustible gastó la flota vehicular?</label>
-                    <input 
-                      type="number" value={combustible} onChange={(e) => setCombustible(e.target.value)}
-                      placeholder="Ej: 300" className="w-full py-4 px-5 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                      required
-                    />
+                  {/* COMBUSTIBLE */}
+                  <div className="w-full flex flex-col gap-2">
+                    <label className="text-green-900 font-bold text-sm">¿Cuántos litros de combustible gastó la flota vehicular?</label>
+                    <div className="w-full flex flex-row items-center gap-2">
+                      <button type="button" onClick={() => modificarValor(setCombustible, combustible, 20, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
+                      <input 
+                        type="number" value={combustible} onChange={(e) => setCombustible(e.target.value)}
+                        onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                        onWheel={(e) => e.target.blur()}
+                        placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                      />
+                      <button type="button" onClick={() => modificarValor(setCombustible, combustible, 20, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
+                    </div>
                   </div>
-
-                  <button type="button" onClick={() => setPaso(2)} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg hover:bg-emerald-700 transition">
-                    Siguiente Sección
-                  </button>
                 </div>
               )}
 
-              {/* PASO 2: DINÁMICO POR RUBRO */}
+              {/* PASO 2: DINÁMICO SEGÚN EL RUBRO */}
               {paso === 2 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-100 pb-2">
-                    <h2 className="text-lg font-bold text-emerald-900">Métricas Específicas de Sector</h2>
-                    <p className="text-gray-400 text-xs font-medium">Campos adaptados al rubro de tu organización</p>
+                <div className="flex flex-col items-center justify-center space-y-6">
+                  <div className="text-center">
+                    <h2 className="text-2xl sm:text-4xl font-black text-green-900 mb-2">Métricas de Sector</h2>
+                    <p className="text-gray-500 text-sm">Campos específicos para optimizar tu rubro comercial</p>
                   </div>
 
-                  {/* PREGUNTA CAMBIADA A LITROS (¡MÁS FÁCIL!) */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-gray-700 font-semibold text-sm">¿Cuántos litros de agua potable se consumieron en las instalaciones?</label>
-                    <input 
-                      type="number" value={aguaLitros} onChange={(e) => setAguaLitros(e.target.value)}
-                      placeholder="Ej: 25000" className="w-full py-4 px-5 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                    />
+                  {/* AGUA LITROS */}
+                  <div className="w-full flex flex-col gap-2">
+                    <label className="text-green-900 font-bold text-sm">¿Cuántos litros de agua se consumieron este mes?</label>
+                    <div className="w-full flex flex-row items-center gap-2">
+                      <button type="button" onClick={() => modificarValor(setAguaLitros, aguaLitros, 1000, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
+                      <input 
+                        type="number" value={aguaLitros} onChange={(e) => setAguaLitros(e.target.value)}
+                        onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                        onWheel={(e) => e.target.blur()}
+                        placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                      />
+                      <button type="button" onClick={() => modificarValor(setAguaLitros, aguaLitros, 1000, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-gray-700 font-semibold text-sm">¿Cuántas resmas de papel de oficina gastaron en el mes?</label>
-                    <input 
-                      type="number" value={papel} onChange={(e) => setPapel(e.target.value)}
-                      placeholder="Ej: 6" className="w-full py-4 px-5 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                    />
-                  </div>
-
-                  {/* PREGUNTAS FILTRADAS POR RUBRO */}
+                  {/* PAPEL RESMAS (SOLO EN RUBRO TECNOLÓGICO) */}
                   {rubroEmpresa === "Tecnológico" && (
-                    <div className="flex flex-col gap-2 bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
-                      <label className="text-emerald-950 font-bold text-sm">💻 Auditoría Cloud: ¿Cuántas horas mensuales aproximadas operaron tus servidores o instancias?</label>
-                      <input 
-                        type="number" value={servidores} onChange={(e) => setServidores(e.target.value)}
-                        placeholder="Ej: 720" className="w-full py-4 px-5 rounded-2xl bg-white border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                      />
+                    <div className="w-full flex flex-col gap-2">
+                      <label className="text-green-900 font-bold text-sm">¿Cuántas resmas de papel se utilizaron?</label>
+                      <div className="w-full flex flex-row items-center gap-2">
+                        <button type="button" onClick={() => modificarValor(setPapel, papel, 5, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
+                        <input 
+                          type="number" value={papel} onChange={(e) => setPapel(e.target.value)}
+                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                          onWheel={(e) => e.target.blur()}
+                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                          required
+                        />
+                        <button type="button" onClick={() => modificarValor(setPapel, papel, 5, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
+                      </div>
                     </div>
                   )}
 
+                  {/* CAMPO DINÁMICO: TECNOLÓGICO */}
+                  {rubroEmpresa === "Tecnológico" && (
+                    <div className="w-full flex flex-col gap-2">
+                      <label className="text-green-900 font-bold text-sm">¿Cuántos servidores e infraestructura cloud mantienen activos?</label>
+                      <div className="w-full flex flex-row items-center gap-2">
+                        <button type="button" onClick={() => modificarValor(setServidores, servidores, 1, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
+                        <input 
+                          type="number" value={servidores} onChange={(e) => setServidores(e.target.value)}
+                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                          onWheel={(e) => e.target.blur()}
+                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                        <button type="button" onClick={() => modificarValor(setServidores, servidores, 1, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CAMPO DINÁMICO: INDUSTRIAL */}
                   {rubroEmpresa === "Industrial" && (
-                    <div className="flex flex-col gap-2 bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
-                      <label className="text-emerald-950 font-bold text-sm">🏭 Desperdicios: ¿Cuántas toneladas de mermas o materia prima descartada se generaron?</label>
-                      <input 
-                        type="number" value={materiaPrima} onChange={(e) => setMateriaPrima(e.target.value)}
-                        placeholder="Ej: 3" className="w-full py-4 px-5 rounded-2xl bg-white border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                      />
+                    <div className="w-full flex flex-col gap-2">
+                      <label className="text-green-900 font-bold text-sm">¿Cuántas toneladas de materia prima fueron procesadas?</label>
+                      <div className="w-full flex flex-row items-center gap-2">
+                        <button type="button" onClick={() => modificarValor(setMateriaPrima, materiaPrima, 1, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
+                        <input 
+                          type="number" value={materiaPrima} onChange={(e) => setMateriaPrima(e.target.value)}
+                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                          onWheel={(e) => e.target.blur()}
+                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                        <button type="button" onClick={() => modificarValor(setMateriaPrima, materiaPrima, 1, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex gap-4">
-                    <button type="button" onClick={() => setPaso(1)} className="w-1/2 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Atrás</button>
-                    <button type="button" onClick={procesarMetricasYAvance} className="w-1/2 py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg hover:bg-emerald-700 transition">Procesar Huella</button>
-                  </div>
+                  {/* CAMPO DINÁMICO: AGRÍCOLA */}
+                  {rubroEmpresa === "Agrícola" && (
+                    <div className="w-full flex flex-col gap-2">
+                      <label className="text-green-900 font-bold text-sm">¿Cuántas hectáreas totales bajo producción están activas?</label>
+                      <div className="w-full flex flex-row items-center gap-2">
+                        <button type="button" onClick={() => modificarValor(setHectareas, hectareas, 5, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
+                        <input 
+                          type="number" value={hectareas} onChange={(e) => setHectareas(e.target.value)}
+                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                          onWheel={(e) => e.target.blur()}
+                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                        <button type="button" onClick={() => modificarValor(setHectareas, hectareas, 5, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* PASO 3: PANTALLA DE RESULTADOS MENSUALES Y ANUALES */}
+              {/* RENDER DE RESULTADOS FINALES */}
               {paso === 3 && (
-                <div className="space-y-6 animate-fade-in">
-                  <div className="border-b border-gray-100 pb-2">
-                    <h2 className="text-lg font-bold text-emerald-900">Resultados de Impacto Ecológico</h2>
-                    <p className="text-gray-400 text-xs font-medium">Estimación calculada a partir de los coeficientes del IPCC</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Mensual */}
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 p-6 rounded-2xl text-center">
-                      <p className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Balance Mensual</p>
-                      <h3 className="text-3xl font-black text-gray-800 mt-2">{resultadoMensual.toFixed(1)}</h3>
-                      <p className="text-xs text-gray-500 font-medium mt-1">Kilogramos de CO₂ / Mes</p>
+                <div className="space-y-6 max-h-[58vh] overflow-y-auto pr-1">
+                  
+                  {/* RESULTADO PRINCIPAL: MENSUAL Y ANUAL JUNTOS */}
+                  <div className="bg-gradient-to-br from-green-700 via-green-600 to-green-500 text-white p-5 rounded-3xl shadow-xl">
+                    <div className="text-center border-b border-white/20 pb-3 mb-3">
+                      <p className="text-xs uppercase tracking-widest opacity-80 font-bold">Huella Mensual</p>
+                      <h1 className="text-4xl font-black mt-0.5 break-words">
+                        {resultadoMensual.toFixed(2)}
+                      </h1>
+                      <p className="text-xs mt-0.5">kg CO₂ / mes</p>
                     </div>
 
-                    {/* Anual */}
-                    <div className="bg-gradient-to-br from-teal-800 to-emerald-900 text-white p-6 rounded-2xl text-center shadow-md">
-                      <p className="text-xs font-bold text-emerald-200 uppercase tracking-wider">Proyección Anual</p>
-                      <h3 className="text-3xl font-black mt-2">{resultadoAnual.toFixed(2)}</h3>
-                      <p className="text-xs text-emerald-100 opacity-90 font-medium mt-1">Toneladas de CO₂ / Año</p>
+                    <div className="text-center">
+                      <p className="text-xs uppercase tracking-widest opacity-80 font-bold">Proyección Anual</p>
+                      <h2 className="text-2xl font-black mt-0.5 break-words text-green-200">
+                        {resultadoAnual.toFixed(2)}
+                      </h2>
+                      <p className="text-xs mt-0.5">Toneladas CO₂ / año</p>
                     </div>
                   </div>
 
-                  <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={() => setPaso(2)} className="w-1/2 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Modificar Datos</button>
-                    <button type="button" onClick={() => setPaso(4)} className="w-1/2 py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg hover:bg-emerald-700 transition">Ver Recomendaciones</button>
-                  </div>
-                </div>
-              )}
-
-              {/* PASO 4: CONSEJOS APLICABLES Y GUARDADO */}
-              {paso === 4 && (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-100 pb-2">
-                    <h2 className="text-lg font-bold text-emerald-900">Consejos de Sostenibilidad</h2>
-                    <p className="text-gray-400 text-xs font-medium">Acciones corporativas para mitigar tu huella</p>
+                  {/* NUEVA TARJETA: NIVEL DE IMPACTO */}
+                  <div className={`border p-4 rounded-2xl text-center transition-all ${nivelImpacto.bg}`}>
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Nivel de Impacto Ambiental</span>
+                    <h3 className={`text-2xl font-black ${nivelImpacto.color}`}>{nivelImpacto.texto}</h3>
                   </div>
 
-                  <div className="bg-gray-900 text-emerald-400 rounded-2xl p-6 space-y-4 shadow-xl border-l-4 border-emerald-500">
-                    <h4 className="font-extrabold text-sm text-white uppercase tracking-widest">📋 Plan de mitigación sugerido:</h4>
-                    <ul className="space-y-3 text-sm text-gray-300 font-medium list-disc list-inside">
-                      {listaRecomendaciones.map((consejo, idx) => (
-                        <li key={idx} className="leading-relaxed"><span className="text-emerald-400">{consejo}</span></li>
+                  {/* NUEVA SECCIÓN: GRÁFICO DE BARRAS DE MAYOR EMISOR */}
+                  <div className="bg-white p-5 rounded-3xl border border-green-100 shadow-sm">
+                    <h4 className="text-green-900 font-black text-sm uppercase tracking-wide mb-4">📊 Diagnóstico: ¿En qué estás gastando más?</h4>
+                    <div className="space-y-4">
+                      {datosGrafico.map((item, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex justify-between text-xs font-bold text-gray-700">
+                            <span>{item.nombre}</span>
+                            <span className="text-gray-500">{item.valor.toFixed(1)} kg CO₂</span>
+                          </div>
+                          <div className="w-full bg-gray-100 h-4 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-1000 ${
+                                idx === 0 ? "bg-red-500" : "bg-green-600 opacity-70"
+                              }`}
+                              style={{ width: `${item.porcentajeBarra}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-3 text-center italic">
+                      *La barra roja representa tu mayor foco de contaminación actual.
+                    </p>
+                  </div>
+
+                  {/* RECOMENDACIONES DE SUSTENTABILIDAD */}
+                  <div className="bg-white p-5 rounded-3xl border border-green-100 shadow-md">
+                    <h4 className="text-green-900 font-bold text-sm sm:text-base mb-3">📋 Plan estratégico de reducción recomendado:</h4>
+                    <ul className="space-y-3 text-left">
+                      {listaRecomendaciones.map((tip, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+                          <span className="text-green-500 font-bold mt-0.5">✔</span>
+                          <span>{tip}</span>
+                        </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div className="flex gap-4">
-                    <button type="button" disabled={guardando} onClick={() => setPaso(3)} className="w-1/2 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Revisar Balance</button>
-                    <button type="button" onClick={handleGuardarEnDashboard} disabled={guardando} className="w-1/2 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-2xl shadow-xl hover:opacity-95 transition">
-                      {guardando ? "Guardando..." : "Integrar a Dashboard"}
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
 
+        {/* BOTÓN DE ACCIÓN DINÁMICO DE CONTROL */}
+        {!exito && (
+          <div className="w-full pt-4">
+            <button
+              onClick={paso === 1 ? () => setPaso(2) : paso === 2 ? procesarMetricasYAvance : handleGuardarEnDashboard}
+              disabled={guardando}
+              className={`w-full bg-gradient-to-r from-green-800 to-green-500 text-white p-4 sm:p-5 rounded-2xl font-black text-base sm:text-lg shadow-lg hover:scale-[1.01] transition-all ${
+                guardando ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {paso === 1 ? "Siguiente Sección" : paso === 2 ? "Calcular Impacto" : guardando ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+        )}
+
       </div>
+
+      <style>
+        {`
+          .fondoCal {
+            background: linear-gradient(to bottom, #9dd56f, #eaf7dc);
+            font-family: "Kanit", "Poppins", sans-serif;
+          }
+          input[type="number"]::-webkit-inner-spin-button,
+          input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          input[type="number"] {
+            -moz-appearance: textfield;
+          }
+        `}
+      </style>
     </main>
   );
 }

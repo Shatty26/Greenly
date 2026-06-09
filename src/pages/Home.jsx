@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 
 // Firebase (¡Nuestros salvavidas de la base de datos!)
 import { auth, db } from "../firebase/config";
-import { signOut } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Home() {
@@ -15,7 +14,7 @@ function Home() {
   // ==========================================
   // ESTADOS: Aquí guardamos la info de la app
   // ==========================================
-  const [username, setUsername] = useState(""); // Por si las moscas, empieza en "Usuario"
+  const [username, setUsername] = useState(""); // Nombre del usuario conectado
   const [saludo, setSaludo] = useState("");            // Cambia según la hora del día
   const [emoji, setEmoji] = useState("🌞");            // El mood del clima en emoji
   const [totalMensual, setTotalMensual] = useState(0); // Huella mensual de carbono (kg CO2)
@@ -37,23 +36,19 @@ function Home() {
       setSaludo("Buenas noches");
       setEmoji("🌙");
     }
-  }, []); // Se ejecuta una sola vez al montar el componente. ¡Al toque!
+  }, []); // Se ejecuta una sola vez al montar el componente.
 
   // ==========================================
   // OBTENER DATOS DE FIREBASE (¡LA MAGIA AQUÍ!)
   // ==========================================
   useEffect(() => {
-    /* ⚠️ ¡OJO AQUÍ! Usamos onAuthStateChanged porque Firebase tarda unos milisegundos 
-      en conectar y saber quién está logueado. Esto se queda "escuchando" hasta que 
-      Firebase dice: "¡Hey, ya tengo al usuario!". En ese momento, corre todo lo de adentro.
-    */
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
+        console.log("🟢 Usuario autenticado con UID:", user.uid);
         try {
           // ----------------------------------------
           // 1. BUSCAR NOMBRE DEL USUARIO
           // ----------------------------------------
-          // Buscamos en la colección "usuarios" donde el campo "uid" sea igual al del usuario logueado
           const lusuarios = query(
             collection(db, "usuarios"),
             where("uid", "==", user.uid)
@@ -64,70 +59,77 @@ function Home() {
           if (!usuarioSnapshot.empty) {
             usuarioSnapshot.forEach((documento) => {
               const data = documento.data();
-              // Guardamos el campo "nombre" de la base de datos ("Florence", etc.)
               if (data.nombre) {
                 setUsername(data.nombre);
               }
             });
           } else {
-            console.log("No se encontró ningún documento con el UID:", user.uid);
-            setUsername("usuarios");
+            console.log("⚠️ No se encontró ningún documento en la colección 'usuarios' con el UID:", user.uid);
+            setUsername("Usuario");
           }
 
           // ----------------------------------------
           // 2. BUSCAR DATOS DE LA CALCULADORA
           // ----------------------------------------
-          // Buscamos todos los registros de la huella de carbono de este usuario específico
           const qCalculadora = query(
             collection(db, "calculadora"),
             where("uid", "==", user.uid)
           );
 
           const snapshot = await getDocs(qCalculadora);
-          let ultimoRegistro = null;
+          
+          console.log(`📊 Documentos encontrados en la colección 'calculadora': ${snapshot.size}`);
 
-          // Recorremos los registros para encontrar el más nuevito usando la fecha
+          let ultimoRegistro = null;
+          let fechaMasRecienteMs = 0;
+
+          // Recorremos los registros encontrados
           snapshot.forEach((doc) => {
             const data = doc.data();
-            if (
-              !ultimoRegistro ||
-              data.fecha.seconds > ultimoRegistro.fecha.seconds
-            ) {
-              ultimoRegistro = data; // Guardamos el registro más reciente temporalmente
+            console.log("📄 Datos del documento encontrado:", data);
+            
+            // Verificamos si existe el campo fecha para ordenar por el más reciente
+            if (data.fecha) {
+              let fechaActualMs = 0;
+
+              if (typeof data.fecha.toDate === "function") {
+                fechaActualMs = data.fecha.toDate().getTime();
+              } else if (data.fecha.seconds) {
+                fechaActualMs = data.fecha.seconds * 1000;
+              } else {
+                fechaActualMs = new Date(data.fecha).getTime();
+              }
+
+              if (!ultimoRegistro || fechaActualMs > fechaMasRecienteMs) {
+                ultimoRegistro = data;
+                fechaMasRecienteMs = fechaActualMs;
+              }
+            } else {
+              // Si no tienes un campo fecha configurado, agarramos el primer registro que encuentre
+              if (!ultimoRegistro) ultimoRegistro = data;
             }
           });
 
-          // Si encontramos aunque sea un cálculo, actualizamos la pantalla con esos números
+          // Si encontramos el registro, actualizamos los estados
           if (ultimoRegistro) {
-            setTotalMensual(ultimoRegistro.totalMensual || 0);
-            setTotalAnual(ultimoRegistro.totalAnual || 0);
+            console.log("✅ Registro más reciente seleccionado:", ultimoRegistro);
+            setTotalMensual(Number(ultimoRegistro.totalMensual) || 0);
+            setTotalAnual(Number(ultimoRegistro.totalAnual) || 0);
+          } else {
+            console.log("❌ La consulta no arrojó ningún registro válido para este UID.");
           }
 
         } catch (error) {
-          console.error("¡Rayos! Algo salió mal obteniendo datos de Firestore:", error);
+          console.error("🚨 Error crítico obteniendo datos de Firestore:", error);
         }
       } else {
-        // Alerta roja: Si Firebase confirma que NO hay nadie logueado, ¡pa' fuera! Al login de una.
+        console.log("🔴 No hay sesión activa. Redirigiendo al login...");
         navigate("/");
       }
     });
 
-    // Limpieza total: Cuando el usuario se vaya de esta pantalla, apagamos este "escuchador" 
-    // para que la app no gaste memoria de gusto. ¡Código limpio!
     return () => unsubscribe();
   }, [navigate]);
-
-  // ==========================================
-  // LOGOUT: Cerrar sesión y limpiar todo
-  // ==========================================
-  const handleLogout = async () => {
-    try {
-      await signOut(auth); // Le decimos a Firebase que cierre la sesión actual
-      navigate("/");       // Nos manda directo al inicio
-    } catch (error) {
-      console.error("¡Ups! No se pudo cerrar sesión correctamente:", error);
-    }
-  };
 
   // ==========================================
   // DISEÑO VISUAL (INTERFAZ)
@@ -139,7 +141,7 @@ function Home() {
         {/* HEADER: Saludo personalizado */}
         <div className="mb-7">
           <h1 className="text-[28px] md:text-[30px] font-bold text-gray-900 flex items-center gap-2">
-            {saludo} {emoji}
+            {saludo}, {username || "Usuario"} {emoji}
           </h1>
           <div className="h-[5px] w-[110px] md:h-[4px] md:w-[90px] bg-gradient-to-r from-emerald-500 to-green-400 rounded-full mt-3"></div>
         </div>
@@ -161,7 +163,7 @@ function Home() {
           />
 
           {/* Textos Informativos cargados desde Firestore */}
-          <div className="absolute top-7 left-6 text-white">
+          <div className="absolute top-7 left-6 text-white z-10">
             <p className="text-white/90 text-base md:text-lg font-semibold">
               Tu impacto ambiental
             </p>
@@ -247,10 +249,6 @@ function Home() {
 
           </div>
         </div>
-
-        {/* BOTÓN EXTRA DE CONTROL: Puedes colocar un botón que llame a {handleLogout} 
-          en tu barra de navegación o pie de página cuando quieras dar la opción de salir.
-        */}
 
       </div>
     </div>
