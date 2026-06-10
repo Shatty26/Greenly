@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -25,6 +26,7 @@ const ChangeView = ({ center, zoom }) => {
 };
 
 const DondeReciclar = () => {
+  const navigate = useNavigate();
   const [places] = useState([
     { 
       id: 1, 
@@ -400,16 +402,22 @@ const DondeReciclar = () => {
       
       <aside className="w-full md:w-[380px] h-[60vh] md:h-full bg-white shadow-2xl z-20 overflow-y-auto">
         <div className="p-5">
-          <button 
-            onClick={() => window.history.back()} 
-            className="w-10 h-10 mb-4 flex items-center justify-center bg-[#009329] text-white rounded-full hover:bg-[#005016] transition-all shadow-md group cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 transition-transform group-hover:-translate-x-1">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-            </svg>
-          </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 cursor-pointer"
+            >
+              <img
+                src="/img/regresar.png"
+                alt="Regresar"
+                className="w-10 h-10 object-contain"
+              />
+            </button>
+          <h1 className="text-[42px] lg:text-[100px] font-black leading-none text-center mb-3"
+          style={{ color: "#005016" }}>
+            Donde Reciclar
+          </h1>
 
-          <h2 className="text-xl md:text-2xl font-bold text-[#005016] mb-6">Lugares cercanos</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#608f45] mb-4">Lugares cercanos</h2>
 
           <div className="space-y-4">
             {places.map((place) => (

@@ -7,47 +7,36 @@ function CalculadoraEmpresa() {
   const navigate = useNavigate();
   const user = auth.currentUser;
 
-  // =========================================
-  // ESTADOS DEL COMPONENTE
-  // =========================================
   const [paso, setPaso] = useState(1);
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const [errorCampos, setErrorCampos] = useState("");
   const [exito, setExito] = useState(false);
 
-  // Datos de origen de la empresa
   const [nombreEmpresa, setNombreEmpresa] = useState("la Empresa");
   const [rubroEmpresa, setRubroEmpresa] = useState("Tecnológico");
 
-  // Inputs del usuario
   const [kwh, setKwh] = useState("");
   const [combustible, setCombustible] = useState("");
-  const [aguaLitros, setAguaLitros] = useState(""); 
+  const [aguaLitros, setAguaLitros] = useState("");
   const [papel, setPapel] = useState("");
-  
-  // Inputs específicos por rubro
-  const [materiaPrima, setMateriaPrima] = useState(""); 
-  const [servidores, setServidores] = useState("");     
-  const [hectareas, setHectareas] = useState("");       
+  const [materiaPrima, setMateriaPrima] = useState("");
+  const [servidores, setServidores] = useState("");
+  const [hectareas, setHectareas] = useState("");
 
-  // Resultados calculados expuestos en la interfaz
   const [resultadoMensual, setResultadoMensual] = useState(0);
   const [resultadoAnual, setResultadoAnual] = useState(0);
   const [nivelImpacto, setNivelImpacto] = useState({ texto: "", color: "", bg: "" });
   const [listaRecomendaciones, setListaRecomendaciones] = useState([]);
   const [datosGrafico, setDatosGrafico] = useState([]);
 
-  // =========================================
-  // DETECTAR EL RUBRO AUTOMÁTICAMENTE
-  // =========================================
   useEffect(() => {
     const cargarRubroEmpresa = async () => {
       if (!user) return;
       try {
         const docRef = doc(db, "empresas", user.uid);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
           const data = docSnap.data();
           setNombreEmpresa(data.nombreEmpresa || data.nombre || "tu Empresa");
@@ -59,35 +48,47 @@ function CalculadoraEmpresa() {
         setLoading(false);
       }
     };
-
     cargarRubroEmpresa();
   }, [user]);
 
-  // =========================================
-  // COMPORTAMIENTO MÁS / MENOS (PASO A PASO)
-  // =========================================
-  const modificarValor = (setter, valorActual, cantidad, esIncremento) => {
-    const actual = parseFloat(valorActual) || 0;
-    if (esIncremento) {
-      setter((actual + cantidad).toString());
-    } else {
-      if (actual >= cantidad) setter((actual - cantidad).toString());
+  // Validación de campos por paso
+  const validarPaso = () => {
+    if (paso === 1) {
+      if (!kwh || !combustible) {
+        setErrorCampos("Debes completar todos los campos para continuar.");
+        return false;
+      }
     }
+    if (paso === 2) {
+      const faltaAgua = !aguaLitros;
+      const faltaTecno = rubroEmpresa === "Tecnológico" && (!papel || !servidores);
+      const faltaIndustrial = rubroEmpresa === "Industrial" && !materiaPrima;
+      const faltaAgricola = rubroEmpresa === "Agrícola" && !hectareas;
+      if (faltaAgua || faltaTecno || faltaIndustrial || faltaAgricola) {
+        setErrorCampos("Debes completar todos los campos para continuar.");
+        return false;
+      }
+    }
+    setErrorCampos("");
+    return true;
   };
 
-  // =========================================
-  // LOGICA MATEMÁTICA Y GENERADOR DE CONSEJOS
-  // =========================================
+  const handleSiguiente = () => {
+    if (!validarPaso()) return;
+    setPaso(p => p + 1);
+  };
+
   const procesarMetricasYAvance = () => {
-    // Factores de emisión
+    if (!validarPaso()) return;
+
     const factorLuz = 0.35;
     const factorCombustible = 2.31;
-    const factorAguaM3 = 0.25; 
+    const factorAguaM3 = 0.25;
     const factorPapel = 1.2;
 
     const numKwh = Number(kwh) || 0;
     const numCombustible = Number(combustible) || 0;
-    const numAguaM3 = (Number(aguaLitros) || 0) / 1000; 
+    const numAguaM3 = (Number(aguaLitros) || 0) / 1000;
     const numPapel = rubroEmpresa === "Tecnológico" ? (Number(papel) || 0) : 0;
 
     let numEspecial = 0;
@@ -108,7 +109,6 @@ function CalculadoraEmpresa() {
       nombreEspecial = "Hectáreas";
     }
 
-    // Calcular CO2 individual para el gráfico
     const co2Luz = numKwh * factorLuz;
     const co2Combustible = numCombustible * factorCombustible;
     const co2Agua = numAguaM3 * factorAguaM3;
@@ -121,82 +121,54 @@ function CalculadoraEmpresa() {
     setResultadoMensual(totalMensualKg);
     setResultadoAnual(totalAnualToneladas);
 
-    // 1. Determinar Nivel de Impacto Corporativo
     let impacto = { texto: "Bajo", color: "text-green-600", bg: "bg-green-50 border-green-200" };
-    if (totalMensualKg > 500 && totalMensualKg <= 2000) {
-      impacto = { texto: "Moderado", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" };
-    } else if (totalMensualKg > 2000) {
-      impacto = { texto: "Alto", color: "text-red-600", bg: "bg-red-50 border-red-200" };
-    }
+      if (totalMensualKg <= 500) {
+        impacto = { texto: "Bajo", color: "text-green-600", bg: "bg-green-50 border-green-200" };
+      } else if (totalMensualKg <= 2000) {
+        impacto = { texto: "Moderado", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" };
+      } else {
+        impacto = { texto: "Alto", color: "text-red-600", bg: "bg-red-50 border-red-200" };
+      }
     setNivelImpacto(impacto);
 
-    // 2. Preparar datos para el gráfico nativo
     const itemsGrafico = [
       { nombre: "Electricidad", valor: co2Luz },
       { nombre: "Combustible", valor: co2Combustible },
       { nombre: "Agua", valor: co2Agua },
     ];
-    if (rubroEmpresa === "Tecnológico") {
-      itemsGrafico.push({ nombre: "Papel", valor: co2Papel });
-    }
+    if (rubroEmpresa === "Tecnológico") itemsGrafico.push({ nombre: "Papel", valor: co2Papel });
     itemsGrafico.push({ nombre: nombreEspecial, valor: co2Especial });
 
-    // Encontrar el valor más alto para sacar porcentajes visuales de las barras
     const valorMaximo = Math.max(...itemsGrafico.map(i => i.valor), 1);
-    const graficoProcesado = itemsGrafico.map(item => ({
-      ...item,
-      porcentajeBarra: Math.min((item.valor / valorMaximo) * 100, 100)
-    }));
-    
-    // Ordenar de mayor a menor consumo para mostrar el problema primero
-    graficoProcesado.sort((a, b) => b.valor - a.valor);
+    const graficoProcesado = itemsGrafico
+      .map(item => ({ ...item, porcentajeBarra: Math.min((item.valor / valorMaximo) * 100, 100) }))
+      .sort((a, b) => b.valor - a.valor);
     setDatosGrafico(graficoProcesado);
 
-    // 3. Generar Recomendaciones Inteligentes Basadas en lo que salió más alto
     const consejos = [];
     const mayorOfensor = graficoProcesado[0];
-
     if (mayorOfensor && mayorOfensor.valor > 0) {
-      consejos.push(`⚠️ **Prioridad Crítica:** Tu mayor fuente de emisión es **${mayorOfensor.nombre}** (${mayorOfensor.valor.toFixed(1)} kg CO₂). Aquí debes concentrar tus esfuerzos de mejora urgentes.`);
+      consejos.push(`Prioridad Crítica: Tu mayor fuente de emisión es **${mayorOfensor.nombre}** (${mayorOfensor.valor.toFixed(1)} kg CO₂). Aquí debes concentrar tus esfuerzos de mejora urgentes.`);
     }
-
-    // Consejos condicionales tradicionales
-    if (numKwh > 800) {
-      consejos.push("💡 Cambia luminarias a LED de alta eficiencia y configura sensores de movimiento en áreas de poco tráfico corporativo.");
-    }
-    if (numCombustible > 150) {
-      consejos.push("🚗 Optimiza las rutas de distribución o establece incentivos económicos para los empleados que usen transporte público o bicicleta.");
-    }
-    if (Number(aguaLitros) > 12000) {
-      consejos.push("💧 El consumo de agua es elevado. Coloca reguladores de caudal en grifos y revisa llaves de paso para prevenir fugas.");
-    }
-
-    // Consejos por rubro
+    if (numKwh > 800) consejos.push("Cambia luminarias a LED de alta eficiencia y configura sensores de movimiento en áreas de poco tráfico corporativo.");
+    if (numCombustible > 150) consejos.push("Optimiza las rutas de distribución o establece incentivos económicos para los empleados que usen transporte público o bicicleta.");
+    if (Number(aguaLitros) > 12000) consejos.push("El consumo de agua es elevado. Coloca reguladores de caudal en grifos y revisa llaves de paso para prevenir fugas.");
     if (rubroEmpresa === "Tecnológico") {
-      if (numPapel > 8) {
-        consejos.push("📄 Reduce las resmas implementando firmas digitales legalizadas (como DocuSign) para eliminar contratos físicos.");
-      }
-      if (numEspecial > 5) {
-        consejos.push("⚡ Evalúa proveedores Cloud como AWS, Google o Azure que garanticen infraestructuras operadas al 100% con energías renovables.");
-      }
+      if (numPapel > 8) consejos.push("Reduce las resmas implementando firmas digitales legalizadas para eliminar contratos físicos.");
+      if (numEspecial > 5) consejos.push("Evalúa proveedores Cloud que garanticen infraestructuras operadas al 100% con energías renovables.");
     } else if (rubroEmpresa === "Industrial") {
-      consejos.push("🏭 Recupera el calor residual de tus procesos mecánicos y rediseña los empaques para reducir el tonelaje de residuos finales.");
+      consejos.push("Recupera el calor residual de tus procesos mecánicos y rediseña los empaques para reducir el tonelaje de residuos finales.");
     } else if (rubroEmpresa === "Agrícola") {
-      consejos.push("🌱 Integra fertilizantes orgánicos de liberación lenta para mitigar la huella de compuestos nitrogenados en el suelo.");
+      consejos.push("Integra fertilizantes orgánicos de liberación lenta para mitigar la huella de compuestos nitrogenados en el suelo.");
     }
-
     setListaRecomendaciones(consejos);
-    setPaso(3); 
+    setPaso(3);
   };
 
-  // =========================================
-  // GUARDAR DEFINITIVAMENTE EN FIRESTORE
-  // =========================================
   const handleGuardarEnDashboard = async () => {
     if (!user) return;
     setGuardando(true);
     setError("");
-
     try {
       await addDoc(collection(db, "calculadora"), {
         uid: user.uid,
@@ -206,7 +178,7 @@ function CalculadoraEmpresa() {
         datosOrigen: {
           kwhMensual: Number(kwh) || 0,
           combustibleLitros: Number(combustible) || 0,
-          aguaLitros: Number(aguaLitros) || 0, 
+          aguaLitros: Number(aguaLitros) || 0,
           papelResmas: rubroEmpresa === "Tecnológico" ? (Number(papel) || 0) : 0,
           servidoresActivos: rubroEmpresa === "Tecnológico" ? (Number(servidores) || 0) : 0,
           materiaPrimaToneladas: rubroEmpresa === "Industrial" ? (Number(materiaPrima) || 0) : 0,
@@ -216,10 +188,8 @@ function CalculadoraEmpresa() {
         totalAnual: parseFloat(resultadoAnual.toFixed(2)),
         rangoImpacto: nivelImpacto.texto
       });
-
       setExito(true);
       setTimeout(() => navigate("/HomEmpresa"), 3000);
-
     } catch (err) {
       console.error("Error al guardar la huella:", err);
       setError("No se pudo salvar el registro en el Dashboard corporativo.");
@@ -229,7 +199,8 @@ function CalculadoraEmpresa() {
   };
 
   const handleBack = () => {
-    setPaso((p) => Math.max(p - 1, 1));
+    setErrorCampos("");
+    setPaso(p => Math.max(p - 1, 1));
   };
 
   if (loading) {
@@ -241,47 +212,49 @@ function CalculadoraEmpresa() {
   }
 
   return (
-    <main className="fondoCal min-h-screen flex justify-center items-center p-3 sm:p-6">
-      <div className="bg-white rounded-[30px] shadow-2xl p-5 sm:p-8 w-full max-w-2xl min-h-[650px] flex flex-col justify-between">
-        
-        <div>
-          {/* HEADER */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 items-center justify-between mb-6">
-            {paso < 3 ? (
-              <button
-                onClick={handleBack}
-                disabled={paso === 1}
-                className={`w-full sm:w-auto px-5 py-3 rounded-2xl font-black text-xl transition flex items-center justify-center ${
-                  paso === 1
-                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                    : "bg-green-100 text-green-800 hover:bg-green-200"
-                }`}
-              >
-                ←
-              </button>
-            ) : (
-              <div className="w-full sm:w-auto"></div>
-            )}
+    <main className="fondoCal min-h-screen flex justify-center items-start p-3 sm:p-6 pb-32">
+      <div className="bg-white rounded-[30px] shadow-2xl p-5 sm:p-8 w-full max-w-2xl flex flex-col gap-8">
 
-            {paso < 3 && (
-              <button
-                onClick={() => navigate("/HomEmpresa")}
-                className="w-full sm:w-auto bg-gray-100 px-5 py-3 rounded-2xl font-bold text-green-900 hover:bg-gray-200 transition"
-              >
-                Cancelar
-              </button>
-            )}
+        {/* HEADER */}
+        <div className="flex items-center justify-between gap-4">
+
+  {/* botón circular atrás */}
+  {paso < 3 ? (
+    <button
+      onClick={handleBack}
+      disabled={paso === 1}
+      className={`w-11 h-11 flex items-center justify-center rounded-full shadow-sm transition
+        ${paso === 1 ? "bg-gray-100 text-gray-300" : "bg-green-100 text-green-700 hover:bg-green-200"}`}
+    >
+      ←
+    </button>
+  ) : (
+    <div className="w-11 h-11" />
+  )}
+
+          <button
+            onClick={() => navigate("/HomEmpresa")}
+            className="text-sm font-semibold text-gray-500 hover:text-black"
+          >
+            Cancelar
+          </button>
           </div>
 
-          {/* INDICADOR DE RUBRO */}
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-center mb-4">
-            <span className="text-xs uppercase tracking-wider text-green-600 font-black">Organización Auditada</span>
-            <h3 className="text-xl font-black text-green-900">{rubroEmpresa}</h3>
-          </div>
+        {/* INDICADOR DE RUBRO */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold">
+            Área
+          </p>
+          <h3 className="text-lg font-bold text-900"
+          style={{ color: "#005016" }}>
+            {rubroEmpresa}
+          </h3>
+        </div>
 
-          {/* BARRA DE PROGRESO */}
-          <div className="mb-8">
-            <div className="flex justify-between text-xs font-bold text-green-700 mb-2">
+        {/* BARRA DE PROGRESO */}
+        {paso < 3 && (
+          <div>
+            <div className="flex justify-between text-xs text-green-700 mb-2">
               <span>Evaluando: {nombreEmpresa}</span>
               <span>Paso {paso} de 3</span>
             </div>
@@ -289,271 +262,244 @@ function CalculadoraEmpresa() {
               <div
                 className="h-full bg-gradient-to-r from-green-800 to-green-500 transition-all duration-500"
                 style={{ width: `${(paso / 3) * 100}%` }}
-              ></div>
+              />
             </div>
           </div>
+        )}
 
-          {/* CUERPO CENTRAL */}
-          {exito ? (
-            <div className="text-center py-8 space-y-4 flex flex-col items-center justify-center flex-1">
-              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl shadow-inner">✓</div>
-              <h2 className="text-2xl font-black text-green-900">¡Huella Actualizada!</h2>
-              <p className="text-gray-500 max-w-sm mx-auto text-center text-sm">
-                Tus registros mensuales, anuales y nivel de impacto se guardaron correctamente en tu base de datos.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 font-medium text-center text-sm">
-                  {error}
+        {/* CUERPO */}
+        {exito ? (
+          <div className="text-center py-8 space-y-4 flex flex-col items-center justify-center">
+            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl shadow-inner">✓</div>
+            <h2 className="text-2xl font-black text-green-900">¡Huella Actualizada!</h2>
+            <p className="text-gray-500 max-w-sm mx-auto text-center text-sm">
+              Tus registros mensuales, anuales y nivel de impacto se guardaron correctamente.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+
+            {error && (
+              <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 font-medium text-center text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* PASO 1 */}
+            {paso === 1 && (
+              <div className="flex flex-col items-center space-y-6">
+                <div className="text-center">
+                  <h2 className="text-[24px] sm:text-4xl font-black mb-2" 
+                  style={{ color: "#005016" }}>Métricas Principales</h2>
+                  <p className="text-gray-500 text-sm">Consumo global de energía y logística de transporte</p>
                 </div>
-              )}
 
-              {/* PASO 1: ENERGÍA GENERAL */}
-              {paso === 1 && (
-                <div className="flex flex-col items-center justify-center space-y-6">
+                <div className="w-full flex flex-col gap-2">
+                  <label className="font-semibold text-sm"
+                  style={{ color: "#005016" }}>¿Cuántos kWh de electricidad se consumieron este mes?</label>
+                  <input
+                    type="number" value={kwh} onChange={e => setKwh(e.target.value)}
+                    onKeyDown={e => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                    onWheel={e => e.target.blur()}
+                    placeholder="0"
+                    className="w-full p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div className="w-full flex flex-col gap-2">
+                  <label className="text-green-900 font-semibold text-sm"
+                  style={{ color: "#005016" }}>¿Cuántos litros de combustible gastó la flota vehicular?</label>
+                  <input
+                    type="number" value={combustible} onChange={e => setCombustible(e.target.value)}
+                    onKeyDown={e => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                    onWheel={e => e.target.blur()}
+                    placeholder="0"
+                    className="w-full p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* PASO 2 */}
+            {paso === 2 && (
+              <div className="flex flex-col items-center space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl sm:text-4xl font-black mb-2"
+                  style={{ color: "#005016" }}>Métricas de Sector</h2>
+                  <p className="text-gray-500 text-sm">Campos específicos para optimizar tu rubro comercial</p>
+                </div>
+
+                <div className="w-full flex flex-col gap-2">
+                  <label className="font-semibold text-sm"
+                  style={{ color: "#005016" }}>¿Cuántos litros de agua se consumieron este mes?</label>
+                  <input
+                    type="number" value={aguaLitros} onChange={e => setAguaLitros(e.target.value)}
+                    onKeyDown={e => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                    onWheel={e => e.target.blur()}
+                    placeholder="0"
+                    className="w-full p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                {rubroEmpresa === "Tecnológico" && (
+                  <>
+                    <div className="w-full flex flex-col gap-2">
+                      <label className="font-semibold text-sm"
+                      style={{ color: "#005016" }}>¿Cuántas resmas de papel se utilizaron?</label>
+                      <input
+                        type="number" value={papel} onChange={e => setPapel(e.target.value)}
+                        onKeyDown={e => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                        onWheel={e => e.target.blur()}
+                        placeholder="0"
+                        className="w-full p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                    <div className="w-full flex flex-col gap-2">
+                      <label className="font-semibold text-sm"
+                      style={{ color: "#005016" }}>¿Cuántos servidores e infraestructura cloud mantienen activos?</label>
+                      <input
+                        type="number" value={servidores} onChange={e => setServidores(e.target.value)}
+                        onKeyDown={e => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                        onWheel={e => e.target.blur()}
+                        placeholder="0"
+                        className="w-full p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {rubroEmpresa === "Industrial" && (
+                  <div className="w-full flex flex-col gap-2">
+                    <label className="font-semibold text-sm"
+                    style={{ color: "#005016" }}>¿Cuántas toneladas de materia prima fueron procesadas?</label>
+                    <input
+                      type="number" value={materiaPrima} onChange={e => setMateriaPrima(e.target.value)}
+                      onKeyDown={e => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                      onWheel={e => e.target.blur()}
+                      placeholder="0"
+                      className="w-full p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                )}
+
+                {rubroEmpresa === "Agrícola" && (
+                  <div className="w-full flex flex-col gap-2">
+                    <label className="font-semibold text-sm"
+                    style={{ color: "#005016" }}>¿Cuántas hectáreas totales bajo producción están activas?</label>
+                    <input
+                      type="number" value={hectareas} onChange={e => setHectareas(e.target.value)}
+                      onKeyDown={e => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
+                      onWheel={e => e.target.blur()}
+                      placeholder="0"
+                      className="w-full p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PASO 3: RESULTADOS */}
+            {paso === 3 && (
+              <div className="space-y-6 max-h-[58vh] overflow-y-auto pr-1">
+
+                <div className="bg-gradient-to-br from-green-700 via-green-600 to-green-600 text-white p-5 rounded-3xl shadow-xl">
+                  <div className="text-center border-b border-white/20 pb-3 mb-3">
+                    <p className="text-xs uppercase tracking-widest  font-semibold">Huella Mensual</p>
+                    <h1 className="text-4xl font-black mt-0.5 break-words">{resultadoMensual.toFixed(2)}</h1>
+                    <p className="font-semibold text-xs mt-0.5">kg CO₂ / mes</p>
+                  </div>
                   <div className="text-center">
-                    <h2 className="text-2xl sm:text-4xl font-black text-green-900 mb-2">Métricas Principales</h2>
-                    <p className="text-gray-500 text-sm">Consumo global de energía y logística de transporte</p>
-                  </div>
-
-                  {/* ELECTRICIDAD */}
-                  <div className="w-full flex flex-col gap-2">
-                    <label className="text-green-900 font-bold text-sm">¿Cuántos kWh de electricidad se consumieron este mes?</label>
-                    <div className="w-full flex flex-row items-center gap-2">
-                      <button type="button" onClick={() => modificarValor(setKwh, kwh, 100, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
-                      <input 
-                        type="number" value={kwh} onChange={(e) => setKwh(e.target.value)}
-                        onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
-                        onWheel={(e) => e.target.blur()}
-                        placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
-                      />
-                      <button type="button" onClick={() => modificarValor(setKwh, kwh, 100, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
-                    </div>
-                  </div>
-
-                  {/* COMBUSTIBLE */}
-                  <div className="w-full flex flex-col gap-2">
-                    <label className="text-green-900 font-bold text-sm">¿Cuántos litros de combustible gastó la flota vehicular?</label>
-                    <div className="w-full flex flex-row items-center gap-2">
-                      <button type="button" onClick={() => modificarValor(setCombustible, combustible, 20, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
-                      <input 
-                        type="number" value={combustible} onChange={(e) => setCombustible(e.target.value)}
-                        onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
-                        onWheel={(e) => e.target.blur()}
-                        placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
-                      />
-                      <button type="button" onClick={() => modificarValor(setCombustible, combustible, 20, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
-                    </div>
+                    <p className="text-xs uppercase tracking-widest font-semibold">Proyección Anual</p>
+                    <h2 className="text-2xl font-semibold mt-0.5 break-words">{resultadoAnual.toFixed(2)}</h2>
+                    <p className="font-semibold text-xs mt-0.5">Toneladas CO₂ / año</p>
                   </div>
                 </div>
-              )}
 
-              {/* PASO 2: DINÁMICO SEGÚN EL RUBRO */}
-              {paso === 2 && (
-                <div className="flex flex-col items-center justify-center space-y-6">
-                  <div className="text-center">
-                    <h2 className="text-2xl sm:text-4xl font-black text-green-900 mb-2">Métricas de Sector</h2>
-                    <p className="text-gray-500 text-sm">Campos específicos para optimizar tu rubro comercial</p>
-                  </div>
-
-                  {/* AGUA LITROS */}
-                  <div className="w-full flex flex-col gap-2">
-                    <label className="text-green-900 font-bold text-sm">¿Cuántos litros de agua se consumieron este mes?</label>
-                    <div className="w-full flex flex-row items-center gap-2">
-                      <button type="button" onClick={() => modificarValor(setAguaLitros, aguaLitros, 1000, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
-                      <input 
-                        type="number" value={aguaLitros} onChange={(e) => setAguaLitros(e.target.value)}
-                        onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
-                        onWheel={(e) => e.target.blur()}
-                        placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
-                      />
-                      <button type="button" onClick={() => modificarValor(setAguaLitros, aguaLitros, 1000, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
-                    </div>
-                  </div>
-
-                  {/* PAPEL RESMAS (SOLO EN RUBRO TECNOLÓGICO) */}
-                  {rubroEmpresa === "Tecnológico" && (
-                    <div className="w-full flex flex-col gap-2">
-                      <label className="text-green-900 font-bold text-sm">¿Cuántas resmas de papel se utilizaron?</label>
-                      <div className="w-full flex flex-row items-center gap-2">
-                        <button type="button" onClick={() => modificarValor(setPapel, papel, 5, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
-                        <input 
-                          type="number" value={papel} onChange={(e) => setPapel(e.target.value)}
-                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
-                          onWheel={(e) => e.target.blur()}
-                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          required
-                        />
-                        <button type="button" onClick={() => modificarValor(setPapel, papel, 5, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CAMPO DINÁMICO: TECNOLÓGICO */}
-                  {rubroEmpresa === "Tecnológico" && (
-                    <div className="w-full flex flex-col gap-2">
-                      <label className="text-green-900 font-bold text-sm">¿Cuántos servidores e infraestructura cloud mantienen activos?</label>
-                      <div className="w-full flex flex-row items-center gap-2">
-                        <button type="button" onClick={() => modificarValor(setServidores, servidores, 1, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
-                        <input 
-                          type="number" value={servidores} onChange={(e) => setServidores(e.target.value)}
-                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
-                          onWheel={(e) => e.target.blur()}
-                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                        <button type="button" onClick={() => modificarValor(setServidores, servidores, 1, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CAMPO DINÁMICO: INDUSTRIAL */}
-                  {rubroEmpresa === "Industrial" && (
-                    <div className="w-full flex flex-col gap-2">
-                      <label className="text-green-900 font-bold text-sm">¿Cuántas toneladas de materia prima fueron procesadas?</label>
-                      <div className="w-full flex flex-row items-center gap-2">
-                        <button type="button" onClick={() => modificarValor(setMateriaPrima, materiaPrima, 1, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
-                        <input 
-                          type="number" value={materiaPrima} onChange={(e) => setMateriaPrima(e.target.value)}
-                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
-                          onWheel={(e) => e.target.blur()}
-                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                        <button type="button" onClick={() => modificarValor(setMateriaPrima, materiaPrima, 1, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CAMPO DINÁMICO: AGRÍCOLA */}
-                  {rubroEmpresa === "Agrícola" && (
-                    <div className="w-full flex flex-col gap-2">
-                      <label className="text-green-900 font-bold text-sm">¿Cuántas hectáreas totales bajo producción están activas?</label>
-                      <div className="w-full flex flex-row items-center gap-2">
-                        <button type="button" onClick={() => modificarValor(setHectareas, hectareas, 5, false)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">-</button>
-                        <input 
-                          type="number" value={hectareas} onChange={(e) => setHectareas(e.target.value)}
-                          onKeyDown={(e) => (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()}
-                          onWheel={(e) => e.target.blur()}
-                          placeholder="0" className="flex-1 min-w-0 p-4 bg-green-50 rounded-2xl border border-green-200 text-center text-xl font-bold text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                        <button type="button" onClick={() => modificarValor(setHectareas, hectareas, 5, true)} className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-xl text-2xl font-bold text-green-800 transition shrink-0">+</button>
-                      </div>
-                    </div>
-                  )}
+                <div className={`border p-4 rounded-2xl text-center ${nivelImpacto.bg}`}>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Nivel de Impacto Ambiental</span>
+                  <h3 className={`text-2xl font-semibold ${nivelImpacto.color}`}
+                  style={{ color: "#005016" }}>{nivelImpacto.texto}</h3>
                 </div>
-              )}
 
-              {/* RENDER DE RESULTADOS FINALES */}
-              {paso === 3 && (
-                <div className="space-y-6 max-h-[58vh] overflow-y-auto pr-1">
-                  
-                  {/* RESULTADO PRINCIPAL: MENSUAL Y ANUAL JUNTOS */}
-                  <div className="bg-gradient-to-br from-green-700 via-green-600 to-green-500 text-white p-5 rounded-3xl shadow-xl">
-                    <div className="text-center border-b border-white/20 pb-3 mb-3">
-                      <p className="text-xs uppercase tracking-widest opacity-80 font-bold">Huella Mensual</p>
-                      <h1 className="text-4xl font-black mt-0.5 break-words">
-                        {resultadoMensual.toFixed(2)}
-                      </h1>
-                      <p className="text-xs mt-0.5">kg CO₂ / mes</p>
-                    </div>
-
-                    <div className="text-center">
-                      <p className="text-xs uppercase tracking-widest opacity-80 font-bold">Proyección Anual</p>
-                      <h2 className="text-2xl font-black mt-0.5 break-words text-green-200">
-                        {resultadoAnual.toFixed(2)}
-                      </h2>
-                      <p className="text-xs mt-0.5">Toneladas CO₂ / año</p>
-                    </div>
-                  </div>
-
-                  {/* NUEVA TARJETA: NIVEL DE IMPACTO */}
-                  <div className={`border p-4 rounded-2xl text-center transition-all ${nivelImpacto.bg}`}>
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Nivel de Impacto Ambiental</span>
-                    <h3 className={`text-2xl font-black ${nivelImpacto.color}`}>{nivelImpacto.texto}</h3>
-                  </div>
-
-                  {/* NUEVA SECCIÓN: GRÁFICO DE BARRAS DE MAYOR EMISOR */}
-                  <div className="bg-white p-5 rounded-3xl border border-green-100 shadow-sm">
-                    <h4 className="text-green-900 font-black text-sm uppercase tracking-wide mb-4">📊 Diagnóstico: ¿En qué estás gastando más?</h4>
-                    <div className="space-y-4">
-                      {datosGrafico.map((item, idx) => (
-                        <div key={idx} className="space-y-1">
-                          <div className="flex justify-between text-xs font-bold text-gray-700">
-                            <span>{item.nombre}</span>
-                            <span className="text-gray-500">{item.valor.toFixed(1)} kg CO₂</span>
-                          </div>
-                          <div className="w-full bg-gray-100 h-4 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full transition-all duration-1000 ${
-                                idx === 0 ? "bg-red-500" : "bg-green-600 opacity-70"
-                              }`}
-                              style={{ width: `${item.porcentajeBarra}%` }}
-                            ></div>
-                          </div>
+                <div className="bg-white p-5 rounded-3xl border border-green-100 shadow-sm">
+                  <h4 className="font-semibold text-[15px] tracking-wide mb-4"
+                  style={{ color: "#005016" }}>Diagnóstico: ¿En qué estás gastando más?</h4>
+                  <div className="space-y-4">
+                    {datosGrafico.map((item, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-xs font-semibold"
+                        style={{ color: "#005016" }}>
+                          <span>{item.nombre}</span>
+                          <span className="text-gray-500 font-semibold">{item.valor.toFixed(1)} kg CO₂</span>
                         </div>
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-3 text-center italic">
-                      *La barra roja representa tu mayor foco de contaminación actual.
-                    </p>
+                        <div className="w-full bg-gray-100 h-4 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-1000 ${idx === 0 ? "bg-red-500" : "bg-green-600 opacity-70"}`}
+                            style={{ width: `${item.porcentajeBarra}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* RECOMENDACIONES DE SUSTENTABILIDAD */}
-                  <div className="bg-white p-5 rounded-3xl border border-green-100 shadow-md">
-                    <h4 className="text-green-900 font-bold text-sm sm:text-base mb-3">📋 Plan estratégico de reducción recomendado:</h4>
-                    <ul className="space-y-3 text-left">
-                      {listaRecomendaciones.map((tip, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                          <span className="text-green-500 font-bold mt-0.5">✔</span>
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
+                  <p className="text-[11px] text-gray-400 mt-3 text-center italic">
+                    La barra roja representa tu mayor foco de contaminación actual.
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
 
-        {/* BOTÓN DE ACCIÓN DINÁMICO DE CONTROL */}
-        {!exito && (
-          <div className="w-full pt-4">
-            <button
-              onClick={paso === 1 ? () => setPaso(2) : paso === 2 ? procesarMetricasYAvance : handleGuardarEnDashboard}
-              disabled={guardando}
-              className={`w-full bg-gradient-to-r from-green-800 to-green-500 text-white p-4 sm:p-5 rounded-2xl font-black text-base sm:text-lg shadow-lg hover:scale-[1.01] transition-all ${
-                guardando ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              {paso === 1 ? "Siguiente Sección" : paso === 2 ? "Calcular Impacto" : guardando ? "Guardando..." : "Guardar"}
-            </button>
+                <div className="bg-white p-5 rounded-3xl border border-green-100 shadow-md">
+                  <h4 className="text-green-900 uppercase font-bold text-sm sm:text-base mb-3">Plan estratégico de reducción recomendado:</h4>
+                  <ul className="space-y-3 text-left">
+                    {listaRecomendaciones.map((tip, index) => (
+                      <li key={index} className="flex items-start gap-4 text-sm text-gray-600">
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+              </div>
+            )}
+
           </div>
+        )}
+
+        {/* MENSAJE DE VALIDACIÓN */}
+        {errorCampos && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium text-center px-4 py-3 rounded-2xl">
+            {errorCampos}
+          </div>
+        )}
+
+        {/* BOTÓN DE ACCIÓN — siempre visible */}
+        {!exito && (
+          <button
+            onClick={
+              paso === 1 ? handleSiguiente
+              : paso === 2 ? procesarMetricasYAvance
+              : handleGuardarEnDashboard
+            }
+            disabled={guardando}
+            className={`w-full bg-gradient-to-r from-green-800 to-green-500 text-white p-4 sm:p-5 rounded-2xl font-black text-base sm:text-lg shadow-lg hover:scale-[1.01] transition-all ${guardando ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            {paso === 1 ? "Siguiente Sección"
+              : paso === 2 ? "Calcular Impacto"
+              : guardando ? "Guardando..." : "Guardar"}
+          </button>
         )}
 
       </div>
 
-      <style>
-        {`
+      <style>{`
+        
           .fondoCal {
-            background: linear-gradient(to bottom, #9dd56f, #eaf7dc);
-            font-family: "Kanit", "Poppins", sans-serif;
-          }
-          input[type="number"]::-webkit-inner-spin-button,
-          input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-          }
-          input[type="number"] {
-            -moz-appearance: textfield;
-          }
-        `}
-      </style>
+          background: #ffffff;
+          * {
+              font-family: "Poppins", sans-serif;
+            }}
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+      `}</style>
     </main>
   );
 }

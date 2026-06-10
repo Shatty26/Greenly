@@ -2,215 +2,193 @@ import { useEffect, useState } from "react";
 import { updateDoc, doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../firebase/config";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function PerfilEmpresa() {
   const navigate = useNavigate();
   const user = auth.currentUser;
-  const [nombreEmpresa, setNombreEmpresa] = useState("");
+
+  const [nombreEmpresa, setNombreEmpresa] = useState("Cargando...");
   const [correoEmpresa, setCorreoEmpresa] = useState("");
-  const [planEmpresa, setPlanEmpresa] = useState(""); 
+  const [planEmpresa, setPlanEmpresa] = useState("Sin plan activo");
+  const [codigoEmpresa, setCodigoEmpresa] = useState(null); // null = sin plan
   const [fotoPerfil, setFotoPerfil] = useState("");
   const [loading, setLoading] = useState(false);
-  const [editando, setEditando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
-  
+
+  // ==============================
+  // FOTO ALEATORIA
+  // ==============================
   const seleccionarFotoAleatoria = () => {
-    const cantidadImagenes = 10;
-    const numeroAleatorio = Math.floor(Math.random() * cantidadImagenes) + 1;
-    return `/src/imgEco/ecoimg${numeroAleatorio}.jfif`;
+    const n = Math.floor(Math.random() * 8) + 1;
+    return `/src/imgEco/ecoimg${n}.jfif`;
   };
 
-  // Datos de empresa
+  // ==============================
+  // CARGAR DATOS
+  // ==============================
   useEffect(() => {
-    const obtenerDatosEmpresa = async () => {
+    const obtenerDatos = async () => {
       try {
         const docRef = doc(db, "empresas", user.uid);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
           const data = docSnap.data();
           setNombreEmpresa(data.nombreEmpresa || data.nombre || "");
-          setCorreoEmpresa(data.correo || data.email || user.email || "Correo no disponible");
-          
-          // Recuperar el plan guardado desde Firestore (si no tiene, por defecto "Sin plan activo")
+          setCorreoEmpresa(data.correo || data.email || user.email || "");
           setPlanEmpresa(data.plan || "Sin plan activo");
-        } else {
-          setError("No se encontraron los datos de la organización.");
+          // El código solo existe si ya tiene un plan de pago
+          setCodigoEmpresa(data.codigoEmpresa || null);
         }
-      } catch (error) {
-        console.error("Error al obtener datos corporativos:", error);
-        setError("Error al cargar la información del perfil.");
+      } catch (err) {
+        console.error("Error al obtener datos:", err);
       }
     };
-
     if (user) {
-      obtenerDatosEmpresa();
+      obtenerDatos();
       setFotoPerfil(seleccionarFotoAleatoria());
     }
   }, [user]);
 
-  // Cambios de empresa
-  const guardarCambios = async () => {
-    setMensaje("");
-    setError("");
-
-    if (nombreEmpresa.trim() === "") {
-      setError("El nombre de la empresa no puede estar vacío");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const documentoRef = doc(db, "empresas", user.uid);
-
-      await updateDoc(documentoRef, {
-        nombreEmpresa: nombreEmpresa,
-      });
-
-      setMensaje("Perfil corporativo actualizado correctamente 💚");
-      setEditando(false);
-    } catch (error) {
-      console.error("Error al actualizar la empresa:", error);
-      setError("Ocurrió un error al actualizar los datos institucionales");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ==============================
   // CERRAR SESIÓN
+  // ==============================
   const handleLogout = async () => {
     try {
       await signOut(auth);
       navigate("/");
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+    } catch (err) {
+      console.error("Error al cerrar sesión:", err);
     }
   };
 
+  const tienePlan = planEmpresa !== "Sin plan activo";
+
+  // ==============================
+  // RENDER
+  // ==============================
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-gray-100 flex justify-center">
+
       {/* FONDO */}
       <div className="absolute inset-0 z-0">
         <img src="/fondo.png" alt="background" className="w-full h-full object-cover" />
       </div>
 
-      {/* CONTENEDOR PRINCIPAL */}
+      {/* CONTENEDOR */}
       <div className="relative z-10 w-full max-w-4xl lg:max-w-[1500px] min-h-screen flex flex-col items-center px-4 md:px-10 pt-10 pb-28">
-        
-        {/* CARD */}
-        <div className="w-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col items-center pb-10 mt-12">
-          
-          {/* HEADER */}
+
+        {/* CARD PRINCIPAL */}
+        <div className="w-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col items-center pb-10">
+
+          {/* HEADER VERDE */}
           <div className="w-full h-48 md:h-52 bg-gradient-to-b from-lime-500 to-green-800 rounded-b-[150px] flex justify-center pt-10">
             <h2 className="text-white text-2xl md:text-3xl font-bold text-center leading-tight">
-              Perfil <br /> Corporativo
+              Perfil<br />Corporativo
             </h2>
           </div>
 
-          {/* LOGO / FOTO DE PERFIL */}
+          {/* FOTO DE PERFIL */}
           <div className="relative -mt-12 w-36 h-36 md:w-40 md:h-40 rounded-full bg-white p-2 shadow-xl">
             <div className="w-full h-full rounded-full bg-gradient-to-b from-green-300 to-green-600 flex items-center justify-center overflow-hidden">
-              {fotoPerfil ? (
-                <img src={fotoPerfil} alt="perfil corporativo" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gray-200 animate-pulse"></div>
-              )}
+              {fotoPerfil
+                ? <img src={fotoPerfil} alt="perfil" className="w-full h-full object-cover" />
+                : <div className="w-full h-full bg-gray-200 animate-pulse" />
+              }
             </div>
           </div>
 
-          {/* MUESTRA DE DATOS (NOMBRE, CORREO Y PLAN) / INPUT DE EDICIÓN */}
-          <div className="w-full max-w-2xl px-6 mt-8 space-y-6 text-center">
-            
-            <div className="flex flex-col items-center justify-center min-h-[120px]">
-              {!editando ? (
-                /* MODO VISTA */
-                <div className="space-y-3 flex flex-col items-center">
-                  <h1 className="text-3xl md:text-4xl font-black text-gray-800 tracking-tight">
-                    {nombreEmpresa || "Nombre no definido en BD"}
-                  </h1>
-                  <p className="text-sm md:text-base font-semibold text-gray-500 tracking-wide">
-                    {correoEmpresa}
+          {/* NOMBRE, CORREO Y PLAN */}
+          <div className="text-center mt-5 w-full px-4">
+            <h3 className="text-xl md:text-2xl font-bold text-green-900">
+              {nombreEmpresa}
+            </h3>
+
+            <p className="text-gray-400 text-sm mt-1">{correoEmpresa}</p>
+
+            {/* Badge de plan */}
+            <span className={`inline-block mt-2 px-4 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${
+              tienePlan
+                ? "bg-lime-100 text-green-800 border border-lime-200"
+                : "bg-gray-100 text-gray-500 border border-gray-200"
+            }`}>
+              {planEmpresa}
+            </span>
+
+            {/* ── CÓDIGO DE EMPRESA ── */}
+            <div className="mt-4 mx-auto max-w-xs">
+              {tienePlan && codigoEmpresa ? (
+                /* Tiene plan y código generado */
+                <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-3">
+                  <p className="text-[11px] text-green-600 font-semibold uppercase tracking-wider mb-1">
+                    Código de empresa
                   </p>
-                  
-                  {/* APARTADO VISUAL DEL PLAN */}
-                  <div className="pt-1">
-                    <span className="px-4 py-1.5 rounded-full bg-lime-100 text-green-800 text-xs md:text-sm font-extrabold tracking-wider uppercase shadow-sm border border-lime-200">
-                      Plan actual: {planEmpresa}
-                    </span>
-                  </div>
+                  <p className="text-2xl font-black text-green-800 tracking-widest">
+                    {codigoEmpresa}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Comparte este código con tus empleados para que se unan a la app.
+                  </p>
                 </div>
               ) : (
-                /* MODO EDICIÓN */
-                <div className="w-full flex flex-col gap-2 text-left">
-                  <label className="text-green-900 font-bold text-sm ml-1">Modificar nombre de la empresa</label>
-                  <input
-                    type="text"
-                    value={nombreEmpresa}
-                    onChange={(e) => setNombreEmpresa(e.target.value)}
-                    className="w-full py-4 px-6 rounded-2xl bg-gray-100 outline-none text-gray-700 font-medium focus:ring-2 focus:ring-green-400"
-                    placeholder="Escribe el nuevo nombre"
-                  />
+                /* Sin plan — bloqueo visual */
+                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl px-5 py-3 opacity-60">
+                  <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-1">
+                    Código de empresa
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    🔒 Disponible al activar un plan de pago
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* NOTIFICACIONES */}
-            {mensaje && (
-              <div className="bg-green-100 text-green-700 text-sm rounded-xl py-3 px-4 font-medium text-left">
-                {mensaje}
-              </div>
-            )}
+            <hr className="w-1/2 mx-auto border-gray-100 mt-5" />
+          </div>
 
-            {error && (
-              <div className="bg-red-100 text-red-700 text-sm rounded-xl py-3 px-4 font-medium text-left">
-                {error}
-              </div>
-            )}
+          {/* BOTONES */}
+          <div className="w-full max-w-2xl mt-6 px-6 space-y-4">
 
-            {/* ACCIONES DEL PERFIL */}
-            <div className="mt-8 pt-2 space-y-4">
-              {!editando ? (
-                <>
-                  <button
-                    onClick={() => setEditando(true)}
-                    className="w-full py-4 px-7 rounded-2xl bg-gradient-to-r from-green-800 to-green-500 text-white font-bold text-lg shadow-lg hover:opacity-90 transition"
-                  >
-                    Editar Perfil
-                  </button>
-                  
-                  {/* BOTÓN ADICIONAL PARA ACCEDER A LA PANTALLA DE PRECIOS */}
-                  <button
-                    onClick={() => navigate("/PricingScreen")}
-                    className="w-full py-4 px-7 rounded-2xl bg-gradient-to-r from-lime-600 to-lime-500 text-white font-bold text-lg shadow-lg hover:opacity-90 transition"
-                  >
-                    Ver Planes / Adquirir Suscripción
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={guardarCambios}
-                  disabled={loading}
-                  className="w-full py-4 px-7 rounded-2xl bg-gradient-to-r from-green-800 to-green-500 text-white font-bold text-lg shadow-lg hover:opacity-90 transition disabled:opacity-50"
-                >
-                  {loading ? "Actualizando organización..." : "Guardar Cambios"}
-                </button>
-              )}
+            {/* Editar perfil */}
+            <Link to="/EditarPerfilEmpresa" className="w-full block">
+              <MenuButton label="Editar perfil" />
+            </Link>
 
-              {/* BOTÓN CERRAR SESIÓN */}
-              <button
-                onClick={handleLogout}
-                className="w-full py-4 px-7 rounded-2xl bg-red-100 text-red-600 font-bold text-lg shadow-sm hover:bg-red-200 transition"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
+            {/* Planes de pago */}
+            <Link to="/PricingScreen" className="w-full block">
+              <MenuButton label="Planes de pago" />
+            </Link>
+
+            {/* Soporte técnico */}
+            <Link to="/soporte" className="w-full block">
+              <MenuButton label="Soporte técnico" />
+            </Link>
+
+            {/* Cerrar sesión */}
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-50/60 py-4 px-7 rounded-2xl text-center text-sm md:text-base font-semibold text-red-800 border border-red-100 hover:bg-red-100 transition-all"
+            >
+              Cerrar sesión
+            </button>
 
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+/* ──────────────────────────────────────
+   COMPONENTE BOTÓN MENÚ
+────────────────────────────────────── */
+function MenuButton({ label }) {
+  return (
+    <button className="w-full bg-green-50/60 py-4 px-7 rounded-2xl flex justify-between items-center border border-green-100 hover:bg-green-100 transition-all">
+      <span className="text-sm md:text-base font-semibold text-green-800">{label}</span>
+      <span className="text-2xl text-green-300 font-bold">›</span>
+    </button>
   );
 }
 

@@ -24,12 +24,14 @@ function Calculadora() {
         <div className="grid md:grid-cols-2 gap-y-10 md:gap-y-0 gap-x-6 md:gap-x-10 items-start w-full">
 
           {/* TEXTO */}
-          <div className="order-1 pl-6 md:pl-10 mt-4 md:-mt-6">
+          <div className="order-1 pl-2 md:pl-10 mt-4 md:-mt-6">
             <h1 className="leading-none font-black tracking-tight text-left">
-              <span className="block text-6xl sm:text-7xl md:text-7xl text-green-900">
+              <span className="block text-[53px] sm:text-7xl md:text-7xl"
+              style={{ color: "#005016" }}>
                 Calculadora de huella
               </span>
-              <span className="block text-5xl sm:text-8xl md:text-8xl text-lime-500">
+              <span className="block text-5xl sm:text-8xl md:text-8xl"
+              style={{ color: "#67ba1e" }}>
                 de carbono
               </span>
             </h1>

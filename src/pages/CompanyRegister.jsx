@@ -6,11 +6,10 @@ import { useNavigate } from "react-router-dom";
 
 function CompanyRegister() {
   const navigate = useNavigate();
+  const [companyName, setCompanyName] = useState(""); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [companyType, setCompanyType] = useState("");
-  const [companyCode, setCompanyCode] = useState(""); 
-  const [employeeCount, setEmployeeCount] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState(""); 
@@ -21,11 +20,10 @@ function CompanyRegister() {
     setErrorMessage(""); 
 
     if (
+      companyName.trim() === "" ||
       email.trim() === "" ||
       password.trim() === "" ||
-      companyType === "" ||
-      companyCode.trim() === "" ||
-      employeeCount.trim() === ""
+      companyType === ""
     ) {
       setErrorMessage("Por favor, rellena todos los campos.");
       return;
@@ -46,24 +44,24 @@ function CompanyRegister() {
       // 2. Guardar datos en Firestore en la colección 'empresas' usando el UID
       // Cambié 'tipoEmpresa' por 'rubro' para que sea compatible con tu pantalla de perfil y calculadora
       await setDoc(doc(db, "empresas", user.uid), {
+        name: companyName,
         email: email,
         rubro: companyType, 
-        codigoEmpresa: companyCode.trim(), 
-        cantidadEmpleados: Number(employeeCount), 
         role: "business_admin",           
         fecha: new Date().toLocaleString(),
         uid: user.uid,
       });
 
       // 3. Limpiar inputs del estado
+      setCompanyName("");
       setEmail("");
       setPassword("");
       setCompanyType("");
-      setCompanyCode("");
-      setEmployeeCount("");
+      
+      
       
       // 4. Redirigir correctamente AQUÍ una vez que todo se guardó con éxito
-      navigate("/homempresa");
+      navigate("/HomEmpresa");
 
     } catch (error) {
       console.error("Error exacto en el registro de empresa:", error.code, error.message);
@@ -90,32 +88,28 @@ function CompanyRegister() {
         className="absolute top-0 left-0 w-full h-1/2 lg:h-full bg-cover bg-center"
         style={{ backgroundImage: "url('/img/fondoArboles.png')" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-green-300/70 via-white/40 to-white"></div>
+        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-green-400/20 via-white/40 to-white"></div>
       </div>
 
-      {/* BACK BUTTON */}
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="
-          absolute top-6 left-6 
-          w-12 h-12 
-          flex items-center justify-center 
-          rounded-full bg-white/80 shadow-md 
-          hover:bg-white transition
-          z-30
-        "
-      >
-        <span className="text-xl font-black text-green-900">←</span>
-      </button>
+      {/* BOTÓN REGRESAR */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-9 left-10 z-20"
+          >
+            <img
+              src="/img/regresar.png"
+              alt="Regresar"
+              className="w-10 h-10 object-contain hover:scale-105 transition-transform"
+            />
+          </button>
 
-      {/* HAND IMAGE */}
+      {/* Mano */}
       <img
         src="/img/manocontierra.png"
         alt="mano"
         className="
           absolute 
-          top-[100px] right-[-25px]
+          top-[145px] right-[-25px]
           w-[200px]
           z-0
           lg:top-[60px] lg:right-[640px] lg:w-[300px]
@@ -125,17 +119,18 @@ function CompanyRegister() {
       {/* MAIN LAYOUT */}
       <div className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-start lg:justify-center px-6 lg:px-20 gap-10 pt-20 lg:pt-0">
 
-        {/* LEFT TEXT */}
-        <div className="w-full lg:w-1/2 text-left pl-3 lg:pl-0 lg:text-left">
-          <h1 className="text-[52px] lg:text-[85px] font-black text-green-950 leading-none">
+      {/* LEFT TEXT */}
+        <div className="w-full lg:w-1/2 text-left pl-3 lg:pl-0 lg:text-left relative top-7">
+          <h1 className="text-[52px] lg:text-[85px] font-black text-green-950 leading-none"
+          style={{ color: "#005016" }}>
             Bienvenido
           </h1>
-
-          <h2 className="text-[28px] lg:text-[45px] font-bold text-green-800 mt-2">
+          <h2 className="text-[28px] lg:text-[45px] font-bold mt-3"
+          style={{ color: "#608f45" }}>
             a salvar el
           </h2>
-
-          <h1 className="text-[72px] lg:text-[100px] font-black text-green-500 leading-none">
+          <h1 className="text-[72px] lg:text-[100px] font-black leading-none"
+          style={{ color: "#78bb4d" }}>
             Mundo
           </h1>
         </div>
@@ -143,7 +138,7 @@ function CompanyRegister() {
         {/* Tarjeta de Registro */}
         <div
           className="
-            mt-15 lg:mt-0
+            mt-20 lg:mt-0
             relative z-20
             w-full max-w-[460px]
             lg:max-w-[520px]
@@ -153,8 +148,10 @@ function CompanyRegister() {
             lg:px-12 lg:py-14
           "
         >
-          <h2 className="text-center text-[34px] lg:text-[42px] font-extrabold text-green-500 leading-tight">
-            Registro Empresa
+
+          <h2 className="text-center text-[30px] lg:text-[45px] font-extrabold"
+          style={{ color: "#78bb4d" }}>
+            Regístro Empresa
           </h2>
 
           <p className="text-center text-sm lg:text-base text-gray-600 mt-1 mb-8">
@@ -175,6 +172,22 @@ function CompanyRegister() {
                 ⚠️ {errorMessage}
               </div>
             )}
+
+            {/* Nombre de la empresa */}
+            <input
+              type="text"
+              placeholder="Nombre de la empresa"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="
+                text-sm lg:text-base
+                w-full py-4 lg:py-5 px-6
+                rounded-2xl bg-gray-200 
+                outline-none text-gray-700 
+                placeholder-gray-500 font-medium 
+                focus:ring-2 focus:ring-green-400
+              "
+            />
 
             {/* Correo de la Empresa */}
             <input
@@ -242,41 +255,8 @@ function CompanyRegister() {
               </option>
               <option value="Tecnológico">Tecnológico</option>
               <option value="Agrícola">Agrícola</option>
-              <option value="Industrial">Industrial</option>
+              <option value="Industrial">Educativo</option>
             </select>
-
-            {/* Cantidad de Empleados */}
-            <input
-              type="number"
-              min="1"
-              placeholder="Cantidad de empleados"
-              value={employeeCount}
-              onChange={(e) => setEmployeeCount(e.target.value)}
-              className="
-                text-sm lg:text-base
-                w-full py-4 lg:py-5 px-6
-                rounded-2xl bg-gray-200 
-                outline-none text-gray-700 
-                placeholder-gray-500 font-medium 
-                focus:ring-2 focus:ring-green-400
-              "
-            />
-
-            {/* Código Creado por la Empresa */}
-            <input
-              type="text"
-              placeholder="Crea el código para tu empresa (Ej: patito123)"
-              value={companyCode}
-              onChange={(e) => setCompanyCode(e.target.value)}
-              className="
-                text-sm lg:text-base
-                w-full py-4 lg:py-5 px-6
-                rounded-2xl bg-gray-200 
-                outline-none text-gray-700 
-                placeholder-gray-500 font-medium 
-                focus:ring-2 focus:ring-green-400
-              "
-            />
 
             {/* Fuerza de la Contraseña */}
             {password.length > 0 && (
@@ -309,10 +289,6 @@ function CompanyRegister() {
             >
               {loading ? "Registrando organización..." : "Regístrate"}
             </button>
-
-            <div className="text-center mt-2 py-3 px-4 rounded-2xl bg-green-100 text-green-700 font-semibold text-sm">
-              "small steps, big impact"
-            </div>
           </form>
         </div>
       </div>

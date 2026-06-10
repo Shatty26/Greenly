@@ -29,12 +29,17 @@ export function Soporte() {
       {/* HEADER */}
       <div className="relative flex items-center mb-3">
 
-        <button
-          onClick={() => navigate("/perfil")}
-          className="text-green-800 text-2xl absolute left-0"
-        >
-          ←
-        </button>
+        {/* BOTÓN REGRESAR */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-9 left-2 z-20"
+          >
+            <img
+              src="/img/regresar.png"
+              alt="Regresar"
+              className="w-10 h-10 object-contain hover:scale-105 transition-transform"
+            />
+          </button>
 
         <h1 className="w-full text-center text-[23px] font-bold text-green-900">
           Soporte técnico

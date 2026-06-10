@@ -68,6 +68,7 @@ function Layout() {
     "/tipousuario",
     "/companyregister",
     "/registerempleados",
+    "/dondereciclar",
     
 
   ];

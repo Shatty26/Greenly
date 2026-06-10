@@ -156,31 +156,28 @@ function Login() {
         className="absolute top-0 left-0 w-full h-1/2 lg:h-full bg-cover bg-center"
         style={{ backgroundImage: "url('/img/fondoArboles.png')" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-green-300/70 via-white/40 to-white"></div>
+        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-green-400/20 via-white/40 to-white"></div>
       </div>
 
-      {/* Retroceder */}
-      <button
-        onClick={() => navigate(-1)}
-        className="
-          absolute top-6 left-6 
-          w-12 h-12 
-          flex items-center justify-center 
-          rounded-full bg-white/80 shadow-md 
-          hover:bg-green transition
-          z-30
-        "
-      >
-        <span className="text-xl font-black text-green-900">←</span>
-      </button>
-
+      {/* BOTÓN REGRESAR */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-9 left-10 z-20"
+          >
+            <img
+              src="/img/regresar.png"
+              alt="Regresar"
+              className="w-10 h-10 object-contain hover:scale-105 transition-transform"
+            />
+          </button>
+      
       {/* Mano */}
       <img
         src="/img/manocontierra.png"
         alt="mano"
         className="
           absolute 
-          top-[100px] right-[-25px]
+          top-[130px] right-[-25px]
           w-[200px]
           z-0
           lg:top-[60px] lg:right-[640px] lg:w-[300px]
@@ -188,34 +185,41 @@ function Login() {
       />
 
       {/* MAIN LAYOUT */}
-      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 lg:px-20 gap-10">
+      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 lg:px-20 gap-13">
+
         {/* LEFT TEXT */}
-        <div className="w-full lg:w-1/2 text-left pl-3 lg:pl-0 lg:text-left">
-          <h1 className="text-[52px] lg:text-[85px] font-black text-green-950 leading-none">
+        <div className="w-full lg:w-1/2 text-left pl-3 lg:pl-0 lg:text-left relative top-7">
+          <h1 className="text-[52px] lg:text-[85px] font-black text-green-950 leading-none"
+          style={{ color: "#005016" }}>
             Bienvenido
           </h1>
-          <h2 className="text-[28px] lg:text-[45px] font-bold text-green-800 mt-2">
-            a salvar el
+          <h2 className="text-[28px] lg:text-[45px] font-bold mt-3"
+          style={{ color: "#608f45" }}>
+            de
           </h2>
-          <h1 className="text-[72px] lg:text-[100px] font-black text-green-500 leading-none">
-            Mundo
+          <h1 className="text-[72px] lg:text-[100px] font-black leading-none"
+          style={{ color: "#78bb4d" }}>
+            Nuevo
           </h1>
         </div>
 
         {/* Tarjeta */}
         <div
           className="
-            mt-17 lg:mt-0
-            w-full max-w-[460px]
-            lg:max-w-[520px]
-            bg-white rounded-[35px]
-            shadow-2xl
-            px-8 py-10
-            lg:px-12 lg:py-14
-            relative z-20
+               mt-18 lg:mt-0
+              translate-y-5
+              lg:translate-y-10
+              w-full max-w-[460px]
+              lg:max-w-[520px]
+              bg-white rounded-[35px]
+              shadow-2xl
+              px-8 py-10
+              lg:px-12 lg:py-14
+              relative z-20
           "
         >
-          <h2 className="text-center text-[36px] lg:text-[45px] font-extrabold text-green-500">
+          <h2 className="text-center text-[36px] lg:text-[45px] font-extrabold"
+          style={{ color: "#78bb4d" }}>
             Inicia Sesión
           </h2>
 

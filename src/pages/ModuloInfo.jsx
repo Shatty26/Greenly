@@ -196,11 +196,17 @@ return (
       <div>
         {/* TITULO PRINCIPAL */}
         <div className="relative flex items-center justify-center text-center px-10">
+          
+          {/* BOTÓN REGRESAR */}
           <button
-            onClick={() => navigate("/home")}
-            className="absolute left-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md hover:bg-green-50 transition"
+            onClick={() => navigate(-1)}
+            className="absolute top-9 left-4 z-20"
           >
-            <img src={flecha} alt="Volver" className="h-5 w-5" />
+            <img
+              src="/img/regresar.png"
+              alt="Regresar"
+              className="w-10 h-10 object-contain hover:scale-105 transition-transform"
+            />
           </button>
 
           <h1 className="text-4xl font-extrabold text-green-900 sm:text-4xl">

@@ -1,9 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase/config";
-// Importamos 'orderBy' y 'limit' para resolver la lectura eficiente del último cálculo
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  collection, query, where, getDocs,
+  doc, getDoc, updateDoc, orderBy, limit
+} from "firebase/firestore";
+
+// Wrapper que muestra la tarjeta con un overlay de "requiere plan" si está bloqueada
+function LockedCard({ locked, children }) {
+  if (!locked) return children;
+  return (
+    <div className="relative">
+      {/* Tarjeta con opacidad reducida para dar sensación de preview */}
+      <div className="opacity-50 pointer-events-none select-none">
+        {children}
+      </div>
+      {/* Badge / banner inferior */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white/95 to-white/60 rounded-b-3xl px-4 py-3 flex items-center gap-2">
+        <span className="text-base">🔒</span>
+        <div>
+          <p className="text-xs font-bold text-gray-700 leading-tight">Requiere plan activo</p>
+          <Link
+            to="/PricingScreen"
+            className="text-[11px] text-emerald-600 font-semibold hover:underline"
+          >
+            Ver planes →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HomEmpresa() {
   const navigate = useNavigate();
@@ -14,279 +41,256 @@ function HomEmpresa() {
 
   const [totalMensual, setTotalMensual] = useState(0);
   const [totalAnual, setTotalAnual] = useState(0);
+  const [loading, setLoading] = useState(true);
+  
 
-  // Estados dinámicos para control de empleados y límites
   const [listaEmpleados, setListaEmpleados] = useState([]);
   const [limiteEmpleados, setLimiteEmpleados] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [planEmpresa, setPlanEmpresa] = useState("");
 
-  // NUEVOS ESTADOS PARA LAS TARJETAS DINÁMICAS
   const [totalEcoScore, setTotalEcoScore] = useState(0);
-  const [porcentajeImpacto, setPorcentajeImpacto] = useState(0);
+  const [nominaAbierta, setNominaAbierta] = useState(false);
 
-  // 1. Saludo dinámico según la hora
+  // ==============================
+  // SALUDO DINÁMICO
+  // ==============================
   useEffect(() => {
     const hora = new Date().getHours();
-    if (hora < 12) {
-      setSaludo("Buenos días");
-      setEmoji("🌞");
-    } else if (hora < 18) {
-      setSaludo("Buenas tardes");
-      setEmoji("🌤️");
-    } else {
-      setSaludo("Buenas noches");
-      setEmoji("🌙");
-    }
+    if (hora < 12) { setSaludo("Buenos días"); setEmoji("🌞"); }
+    else if (hora < 18) { setSaludo("Buenas tardes"); setEmoji("🌤️"); }
+    else { setSaludo("Buenas noches"); setEmoji("🌙"); }
   }, []);
 
-  // 2. Efecto principal conectado a Firestore (Corregido para leer tus datos)
+  
+  // CARGA DE DATOS
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        navigate("/");
-        return;
-      }
-
+      if (!user) { navigate("/"); return; }
       try {
         setLoading(true);
 
-        // A. Obtener datos de la empresa actual
-        const empresaDocRef = doc(db, "empresas", user.uid);
-        const empresaSnapshot = await getDoc(empresaDocRef);
-        
-        let codigoDeLaEmpresa = "";
+        // A. Datos empresa
+        const empresaSnap = await getDoc(doc(db, "empresas", user.uid));
+        let codigoEmpresa = "";
 
-        if (empresaSnapshot.exists()) {
-          const empresaData = empresaSnapshot.data();
-          setUsername(empresaData.nombreEmpresa || empresaData.nombre || empresaData.email?.split("@")[0] || "Empresa");
-          setLimiteEmpleados(Number(empresaData.cantidadEmpleados) || 0);
-          codigoDeLaEmpresa = empresaData.codigoEmpresa || ""; 
+        if (empresaSnap.exists()) {
+          const d = empresaSnap.data();
+          setUsername(d.nombreEmpresa || d.email?.split("@")[0] || "Empresa");
+          setLimiteEmpleados(Number(d.cantidadEmpleados) || 0);
+          setPlanEmpresa(d.plan || "");
+          codigoEmpresa = d.codigoEmpresa || "";
         }
 
-        // B. Obtener los registros de la colección 'empleados'
-        let acumuladorEcoScore = 0;
-        if (codigoDeLaEmpresa !== "") {
-          const qEmpleados = query(
-            collection(db, "empleados"), 
-            where("empresaId", "==", codigoDeLaEmpresa)
-          );
-
-          const empleadosSnapshot = await getDocs(qEmpleados);
-          const empleadosData = [];
-
-          empleadosSnapshot.forEach((doc) => {
-            const data = doc.data();
-            const puntos = data.puntosAcumulados !== undefined ? Number(data.puntosAcumulados) : (Number(data.ecoScore) || 0);
-            
-            acumuladorEcoScore += puntos; // Sumamos los puntos del empleado al total
-
-            empleadosData.push({
+        // B. Empleados
+        if (codigoEmpresa) {
+          const empSnap = await getDocs(query(
+            collection(db, "empleados"),
+            where("empresaId", "==", codigoEmpresa)
+          ));
+          let eco = 0;
+          const lista = [];
+          empSnap.forEach((d) => {
+            const data = d.data();
+            const pts = Number(data.puntosAcumulados ?? data.ecoScore ?? 0);
+            eco += pts;
+            lista.push({
               nombre: data.nombre || data.nombreCompleto || "Empleado sin nombre",
               departamento: data.departamento || "General",
-              ecoScore: puntos,
+              ecoScore: pts,
             });
           });
-
-          setListaEmpleados(empleadosData);
-          setTotalEcoScore(acumuladorEcoScore); // Guardamos la suma total de EcoScore
-        } else {
-          setListaEmpleados([]);
-          setTotalEcoScore(0);
+          setListaEmpleados(lista);
+          setTotalEcoScore(eco);
         }
 
-        // C. Obtener el cálculo de emisiones de la empresa de forma segura
-        // Se quita 'orderBy' de la consulta de Firebase para evitar la necesidad de configurar índices compuestos
-        const qCalculadora = query(
-          collection(db, "calculadora"),
-          where("uid", "==", user.uid),
-          where("tipo", "==", "empresa")
-        );
-
-        const snapshot = await getDocs(qCalculadora);
-        let emisionEmpresaBase = 0;
-        
-        if (!snapshot.empty) {
-          // Ordenamos los documentos manualmente por marca de tiempo en JavaScript
-          const documentos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-          documentos.sort((a, b) => {
-            const fechaA = a.fecha?.seconds || 0;
-            const fechaB = b.fecha?.seconds || 0;
-            return fechaB - fechaA; // El más reciente primero
-          });
-
-          const ultimoRegistro = documentos[0];
-          emisionEmpresaBase = Number(ultimoRegistro.totalAnual) || 0;
-          setTotalMensual(Number(ultimoRegistro.totalMensual) || 0);
-          setTotalAnual(emisionEmpresaBase);
-        } else {
-          setTotalMensual(0);
-          setTotalAnual(0);
+        // C. Huella empresa
+        const docSnap = await getDoc(doc(db, "calculadora", user.uid));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setTotalMensual(data.totalMensual);
+          setTotalAnual(data.totalAnual);
         }
 
-        // D. CALCULAR EL IMPACTO AMBIENTAL TOTAL DE LOS EMPLEADOS (Calculado dinámicamente)
-        if (codigoDeLaEmpresa !== "") {
-          const qCalculosEmpleados = query(
-            collection(db, "calculadora"),
-            where("codigoEmpresa", "==", codigoDeLaEmpresa),
-            where("tipo", "==", "empleado") // Asegura recolectar datos únicos de empleados
-          );
-
-          const calculosSnapshot = await getDocs(qCalculosEmpleados);
-          let sumaHuellaEmpleados = 0;
-
-          calculosSnapshot.forEach((doc) => {
-            const data = doc.data();
-            // Sumamos las toneladas anuales que producen los empleados individuales
-            sumaHuellaEmpleados += Number(data.totalAnual) || 0;
-          });
-
-          // Sacamos el porcentaje de impacto de los empleados sobre el total global de la empresa
-          if (emisionEmpresaBase > 0) {
-            const porcentaje = (sumaHuellaEmpleados / emisionEmpresaBase) * 100;
-            // Lo limitamos al 100% como máximo para la barra visual
-            setPorcentajeImpacto(porcentaje > 100 ? 100 : porcentaje);
-          } else {
-            // Si la empresa base no tiene huella, pero los empleados sí, asignamos un progreso estimado
-            setPorcentajeImpacto(sumaHuellaEmpleados > 0 ? 50 : 0);
-          }
-        }
-
-      } catch (error) {
-        console.error("Error al cargar los datos de la empresa:", error);
+      } catch (err) {
+        console.error("Error cargando datos:", err);
       } finally {
         setLoading(false);
       }
     });
-
     return () => unsubscribe();
   }, [navigate]);
 
-  // Aumentar la restricción de empleados permitidos (+1 espacio)
-  const handleAumentarRestriccion = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
+  const tienePlan = planEmpresa && planEmpresa !== "Sin plan activo";
+  const cuposPct = limiteEmpleados > 0
+    ? Math.min((listaEmpleados.length / limiteEmpleados) * 100, 100)
+    : 0;
 
-    try {
-      const nuevoLimite = limiteEmpleados + 1;
-      const empresaDocRef = doc(db, "empresas", user.uid);
-      
-      await updateDoc(empresaDocRef, {
-        cantidadEmpleados: nuevoLimite
-      });
-
-      setLimiteEmpleados(nuevoLimite);
-    } catch (error) {
-      console.error("Error al aumentar la restricción de empleados:", error);
-      alert("No se pudo actualizar el límite. Inténtalo de nuevo.");
-    }
-  };
-
+  // ==============================
+  // RENDER
+  // ==============================
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-emerald-100 font-[Poppins]">
-      <div className="max-w-7xl mx-auto px-5 md:px-10 py-8">
-        
-        <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <img src="/img/greenly-logo.png" alt="Greenly" className="w-12 h-12 object-contain" />
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                {saludo} {username}!!! {emoji}
-              </h1>
-            </div>
-          </div>
-        </div>
-        <div className="h-1 w-28 bg-emerald-500 rounded-full -mt-4 mb-8"></div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 font-[Poppins]">
+      <div className="pt-6 md:pt-14 px-6 md:px-10 pb-28 max-w-[1300px] mx-auto">
 
-        {/* TARJETA PRINCIPAL (PANEL DE RESULTADOS) */}
-        <div className="relative overflow-hidden rounded-3xl shadow-xl mb-8">
-          <img src="/img/cuadroVerde.png" alt="dashboard" className="w-full h-[250px] md:h-[320px] object-cover" />
-          <img src="/img/manocontierra.png" alt="decoracion" className="absolute right-4 top-5 w-[150px] md:w-[260px] pointer-events-none" />
-          <div className="absolute inset-0 p-6 md:p-10 text-white flex flex-col justify-between">
-            <div>
-              <p className="text-lg font-semibold opacity-90">Huella Total de la Empresa</p>
-              <h2 className="text-5xl md:text-8xl font-extrabold">
-                {loading ? "..." : totalAnual.toFixed(2)}
-              </h2>
-              <p className="text-lg md:text-2xl">Toneladas CO₂ / Año</p>
-            </div>
-            <div>
-              <p className="text-sm md:text-lg">
-                Emisiones mensuales:{" "}
-                <span className="font-bold ml-2">
-                  {loading ? "..." : totalMensual.toFixed(1)} kg CO₂
-                </span>
-              </p>
-            </div>
+        {/* SALUDO */}
+        <div className="mb-7">
+          <h1 className="text-[28px] md:text-[30px] font-bold text-gray-900">
+            {saludo} {emoji}
+          </h1>
+          <div className="h-[5px] w-[110px] bg-gradient-to-r from-emerald-500 to-green-400 rounded-full mt-3" />
+        </div>
+
+        {/* TARJETA HUELLA */}
+        <div className="relative mx-auto mb-8 w-full max-w-[360px] md:max-w-[1200px] h-[175px] md:h-[300px] overflow-hidden rounded-[28px] shadow-xl">
+          <img src="/img/cuadroVerde.png" alt="huella" className="w-full h-full object-cover" />
+          <img src="/img/manocontierra.png" alt="deco" className="absolute top-3 right-0 md:right-[20px] w-[140px] md:w-[260px] z-20 pointer-events-none" />
+          <div className="absolute top-7 left-6 text-white">
+            <p className="text-white/90 text-base md:text-lg font-semibold">Huella total de la empresa</p>
+            <p className="text-[50px] md:text-[90px] font-extrabold leading-none mt-2">
+              {loading ? "..." : totalMensual.toFixed(1)}
+            </p>
+            <p className="text-sm md:text-xl font-medium mt-1">kg CO₂ / mes</p>
+            <p className="text-xs md:text-lg mt-2 text-white/90">
+              {loading ? "" : `${totalAnual.toFixed(2)} toneladas / año`}
+            </p>
           </div>
         </div>
 
+        {/* ══════════════════════════════════════
+            SECCIÓN: RESUMEN DE EMPLEADOS
+        ══════════════════════════════════════ */}
+        <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-4">
+          Resumen de empleados
+        </h2>
+
+        {/* Siempre se muestran las 3 tarjetas; si no hay plan se bloquean */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
 
-          <div className="bg-white rounded-3xl shadow-lg p-6">
-            <h3 className="text-gray-500 font-medium">EcoScore Grupal</h3>
-            <p className="text-4xl font-bold text-emerald-600 mt-3">
-              {loading ? "..." : `${totalEcoScore} pts`}
-            </p>
-            <p className="text-gray-500 mt-2">Puntos ambientales acumulados</p>
-          </div>
-
-          {/* TARJETA 2: EMPLEADOS REGISTRADOS */}
-          <div className="bg-white rounded-3xl shadow-lg p-6">
-            <h3 className="text-gray-500 font-medium">Empleados registrados</h3>
-            <p className="text-4xl font-bold text-green-700 mt-3">
-              {loading ? "..." : `${listaEmpleados.length}/${limiteEmpleados}`}
-            </p>
-            <p className="text-gray-500 mt-2">Cupos utilizados en la plataforma</p>
-          </div>
-
-          {/* TARJETA 3: META AMBIENTAL / IMPACTO EN PORCENTAJE */}
-          <div className="bg-white rounded-3xl shadow-lg p-6">
-            <h3 className="text-gray-500 font-medium">Impacto Colectivo</h3>
-            <p className="text-4xl font-bold text-lime-600 mt-3">
-              {loading ? "..." : `${porcentajeImpacto.toFixed(0)}%`}
-            </p>
-            <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
-              <div 
-                className="bg-emerald-600 h-3 rounded-full transition-all duration-500" 
-                style={{ width: `${porcentajeImpacto}%` }}
-              ></div>
+          {/* Tarjeta — Empleados registrados */}
+          <LockedCard locked={!tienePlan}>
+            <div className="bg-white rounded-3xl shadow-md p-6 flex flex-col gap-2">
+              <p className="text-gray-400 text-sm font-medium">Empleados registrados</p>
+              <p className="text-4xl font-extrabold text-green-700">
+                {loading ? "..." : `${listaEmpleados.length}`}
+                <span className="text-xl text-gray-300 font-semibold"> / {limiteEmpleados || "—"}</span>
+              </p>
+              <p className="text-xs text-gray-400">{tienePlan ? planEmpresa : "Sin plan activo"}</p>
+              {/* Barra */}
+              <div className="w-full bg-gray-100 rounded-full h-2 mt-1">
+                <div
+                  className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${cuposPct}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-gray-300 mt-1">
+                {tienePlan
+                  ? `${limiteEmpleados - listaEmpleados.length} cupos disponibles`
+                  : "Activa un plan para ver tus cupos"}
+              </p>
             </div>
-          </div>
+          </LockedCard>
+
+          {/* Tarjeta — EcoScore grupal */}
+          <LockedCard locked={!tienePlan}>
+            <div className="bg-white rounded-3xl shadow-md p-6 flex flex-col gap-2">
+              <p className="text-gray-400 text-sm font-medium">EcoScore Grupal</p>
+              <p className="text-4xl font-extrabold text-emerald-600">
+                {loading ? "..." : tienePlan ? `${totalEcoScore}` : "—"}
+                <span className="text-xl text-gray-300 font-semibold"> pts</span>
+              </p>
+              <p className="text-xs text-gray-400">Puntos acumulados por todos los empleados</p>
+              {tienePlan && listaEmpleados.length > 0 && (
+                <p className="text-[11px] text-emerald-500 font-semibold mt-1">
+                  ≈ {Math.round(totalEcoScore / listaEmpleados.length)} pts por empleado
+                </p>
+              )}
+            </div>
+          </LockedCard>
+
+          {/* Tarjeta — Nómina */}
+          <LockedCard locked={!tienePlan}>
+            <div className="bg-white rounded-3xl shadow-md p-6 flex flex-col">
+              <button
+                onClick={() => tienePlan && setNominaAbierta(!nominaAbierta)}
+                className="flex items-center justify-between w-full"
+              >
+                <div className="text-left">
+                  <p className="text-gray-400 text-sm font-medium">Nómina activa</p>
+                  <p className="text-2xl font-extrabold text-gray-800 mt-1">
+                    {loading ? "..." : tienePlan ? listaEmpleados.length : "—"}
+                    <span className="text-base text-gray-400 font-medium"> empleados</span>
+                  </p>
+                </div>
+                <span className={`text-2xl text-emerald-400 font-bold transition-transform duration-300 ${nominaAbierta ? "rotate-90" : ""}`}>
+                  ›
+                </span>
+              </button>
+
+              {/* Lista desplegable */}
+              <div className={`overflow-hidden transition-all duration-300 ${nominaAbierta ? "max-h-64 mt-4" : "max-h-0"}`}>
+                {listaEmpleados.length === 0 ? (
+                  <p className="text-gray-300 text-sm text-center py-4">
+                    Aún no hay empleados registrados.
+                  </p>
+                ) : (
+                  <div className="overflow-y-auto max-h-56 space-y-2 pr-1">
+                    {listaEmpleados.map((emp, i) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-emerald-700 font-bold text-xs">
+                            {emp.nombre.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-700 truncate">{emp.nombre}</p>
+                          <p className="text-[11px] text-gray-400">{emp.departamento}</p>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-600 flex-shrink-0">
+                          {emp.ecoScore} pts
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </LockedCard>
+
         </div>
 
-        {/* SECCIÓN DE LA NÓMINA */}
-        <div className="bg-white rounded-3xl shadow-xl p-6">
-          <div className="flex items-center justify-between mb-6 gap-2">
-            <h2 className="text-xl md:text-3xl font-bold">Nómina Activa</h2>
+        {/* ══════════════════════════════════════
+            SECCIÓN: HERRAMIENTAS ECOLÓGICAS
+        ══════════════════════════════════════ */}
+        <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-6">
+          Herramientas ecológicas
+        </h2>
 
-            <button 
-              onClick={handleAumentarRestriccion}
-              disabled={loading}
-              className="px-4 py-2 rounded-xl font-semibold transition text-white bg-emerald-600 hover:bg-emerald-700"
-            >
-              + Agregar Cupo
-            </button>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-7 text-center">
 
-          {loading ? (
-            <p className="text-center text-gray-500 py-10">Cargando nómina...</p>
-          ) : listaEmpleados.length === 0 ? (
-            <p className="text-center text-gray-500 py-10">No hay empleados registrados para esta empresa todavía.</p>
-          ) : (
-            <div className="space-y-4">
-              {listaEmpleados.map((empleado, index) => (
-                <div key={index} className="border border-gray-200 rounded-2xl p-4 hover:shadow-lg transition">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-800">{empleado.nombre}</h3>
-                      <p className="text-gray-500 text-sm">Departamento: {empleado.departamento}</p>
-                      <p className="text-emerald-600 text-sm font-semibold mt-1">Puntos: {empleado.ecoScore} pts</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Clasificador IA */}
+          <Link to="/ClasificadorIA" className="relative w-[140px] md:w-[212px] mx-auto hover:scale-105 transition group">
+            <img src="/img/waste.png" alt="Clasificador" className="w-full drop-shadow-xl group-hover:brightness-110 transition-all duration-300" />
+            <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm md:text-base font-bold text-green-950 group-hover:text-green-700 transition-colors duration-300 w-full px-2 text-center">
+              Clasificador de residuos
+            </p>
+          </Link>
+
+          {/* Dónde reciclar */}
+          <Link to="/DondeReciclar" className="relative w-[140px] md:w-[212px] mx-auto hover:scale-105 transition group">
+            <img src="/img/tree.png" alt="Donde reciclar" className="w-full drop-shadow-xl group-hover:brightness-110 transition-all duration-300" />
+            <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm md:text-base font-bold text-green-950 group-hover:text-green-700 transition-colors duration-300">
+              Donde reciclar
+            </p>
+          </Link>
+
+          {/* Módulo educativo */}
+          <Link to="/ModuloInfo" className="relative w-[140px] md:w-[210px] mx-auto hover:scale-105 transition group">
+            <img src="/img/plant.png" alt="Modulo educativo" className="w-full drop-shadow-xl group-hover:brightness-110 transition-all duration-300" />
+            <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm md:text-base font-bold text-green-950 group-hover:text-green-700 transition-colors duration-300">
+              Módulo educativo
+            </p>
+          </Link>
+
         </div>
 
       </div>

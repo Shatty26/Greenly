@@ -20,25 +20,25 @@ export default function TipoUsuario() {
   };
 
   const cards = [
-    {
-      title: "Usuario",
-      description: "Continúa como usuario normal y explora Greenly",
-      action: elegirUsuario,
-      icon: "usuario",
-    },
-    {
-      title: "Empresa",
-      description: "Continúa como empresa y gestiona tu impacto",
-      action: elegirEmpresa,
-      icon: "empresa",
-    },
-    {
-      title: "Empleado",
-      description: "Únete a la iniciativa de tu empresa y colabora en equipo",
-      action: elegirEmpleado,
-      icon: "empleado",
-    },
-  ];
+  {
+    title: "Usuario",
+    description: "Continúa como usuario normal y explora Greenly",
+    action: elegirUsuario,
+    icon: "normalUsuer",
+  },
+  {
+    title: "Empresa",
+    description: "Continúa como empresa y gestiona tu impacto",
+    action: elegirEmpresa,
+    icon: "empresass",
+  },
+  {
+    title: "Empleado",
+    description: "Únete a la iniciativa de tu empresa y colabora en equipo",
+    action: elegirEmpleado,
+    icon: "emp",
+  },
+];
 
   return (
     <div className="min-h-screen w-full bg-[#f4fbf4] flex items-center justify-center sm:p-6 antialiased">
@@ -48,25 +48,38 @@ export default function TipoUsuario() {
         
         {/* SECCIÓN SUPERIOR: ENCABEZADO Y PLANTA */}
         <div className="relative w-full pt-4 sm:pt-0">
+
+          {/* BOTÓN REGRESAR */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-6 left-2 z-20"
+          >
+            <img
+              src="/img/regresar.png"
+              alt="Regresar"
+              className="w-10 h-10 object-contain hover:scale-105 transition-transform"
+            />
+          </button>
+
           
           {/* LOGO */}
-          <div className="mb-6 sm:mb-8">
+          <div className="mb-6 sm:mb-8 flex justify-center">
             <img
               src="/img/greenly-logo.png"
               alt="Greenly Logo"
-              className="w-28 sm:w-32 object-contain"
+              className="w-35 sm:w-32 object-contain"
             />
           </div>
 
           {/* TEXTO INFORMATIVO */}
           <div className="max-w-[62%] sm:max-w-[65%] flex flex-col gap-2">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#064e3b] tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#004B0A] tracking-tight leading-tight">
               Elige tu <br />
-              <span className="text-[#064e3b]">tipo de cuenta</span>
+              <span className="text-[#004B0A]">tipo de cuenta</span>
             </h1>
 
             {/* BARRA VERDE */}
-            <div className="w-16 h-2 bg-[#22c55e] rounded-full my-2"></div>
+            <div className="w-16 h-2 bg-[#199803] rounded-full my-2"></div>
 
             <p className="text-gray-400 text-sm sm:text-base font-medium leading-relaxed">
               Selecciona cómo deseas continuar y empieza a generar un impacto real
@@ -74,9 +87,9 @@ export default function TipoUsuario() {
           </div>
 
           {/* IMAGEN DE LA PLANTA */}
-          <div className="absolute top-4 right-[-15px] sm:right-0 w-[160px] sm:w-[210px] lg:w-[260px] pointer-events-none drop-shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
+          <div className="absolute top-15 right-[-25px] sm:right-0 w-[180px] sm:w-[210px] lg:w-[260px] pointer-events-none drop-shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
             <img
-              src="/img/manocontierra.png"
+              src="/img/handwithplant.png"
               alt="Greenly Planta"
               className="w-full h-auto object-contain"
             />
@@ -84,7 +97,7 @@ export default function TipoUsuario() {
         </div>
 
         {/* SECCIÓN INFERIOR: TARJETAS (Ahora con un margen controlado que las sube) */}
-        <div className="flex flex-col gap-4 w-full mt-10 sm:mt-12 pb-6 sm:pb-0">
+        <div className="flex flex-col gap-8 w-full mt-10 sm:mt-12 pb-6 sm:pb-0">
           {cards.map((card) => (
             <button
               key={card.title}
@@ -99,25 +112,29 @@ export default function TipoUsuario() {
                   <img
                     src={`/img/${card.icon}.png`}
                     alt={card.title}
-                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-                    onError={(e) => { e.target.src = "/img/usuario.png"; }}
+                    className="w-9 h-8 sm:w-8 sm:h-8 object-contain"
+                    onError={(e) => { e.target.src = "/img/normalUsuer.png"; }}
                   />
                 </div>
 
                 {/* Textos */}
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#064e3b]">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#004B0A]">
                     {card.title}
                   </h2>
-                  <p className="text-gray-400 text-xs sm:text-sm font-normal leading-snug mt-0.5">
+                  <p className="text-gray-400 text-sm sm:text-sm font-normal leading-snug mt-1.5">
                     {card.description}
                   </p>
                 </div>
               </div>
 
               {/* Botón Circular Derecha (Flecha) */}
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#22c55e] group-hover:bg-[#16a34a] rounded-full flex items-center justify-center text-white text-lg font-bold transition-all duration-200 flex-shrink-0 shadow-sm group-hover:translate-x-0.5">
-                ›
+              <div className="flex-shrink-0 transition-all duration-200 group-hover:translate-x-1">
+                <img
+                  src="/img/botonFlecha.png"
+                  alt="Continuar"
+                  className="w-9 h-10 sm:w-12 sm:h-12 object-contain"
+                />
               </div>
             </button>
           ))}

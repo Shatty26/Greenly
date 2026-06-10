@@ -221,16 +221,7 @@ const Retos = () => {
   // ==========================
 
   return (
-    <div className="relative min-h-screen bg-[#EEF1E8] flex justify-center px-3 py-4 font-['Poppins'] overflow-hidden">
-
-      {/* FONDO */}
-      <div className="absolute inset-0 z-0">
-        <img
-          src="/fondo.png"
-          alt="background"
-          className="w-full h-full object-cover opacity-90"
-        />
-      </div>
+    <div className="relative min-h-screen flex justify-center px-3 py-4 font-['Poppins'] overflow-hidden">
 
       {/* CONTENIDO */}
       <div className="relative z-10 w-full max-w-[420px] lg:max-w-[1200px] min-h-screen flex flex-col items-center px-4 md:px-6 pt-2 pb-23">
@@ -267,7 +258,7 @@ const Retos = () => {
           </div>
 
           {/* RETOS */}
-          <div className="bg-[#ECECEC] px-4 pt-5 pb-6">
+          <div className="px-4 pt-5 pb-6">
 
             {/* TITULO */}
             <div className="flex justify-between items-center mb-4">
@@ -319,23 +310,25 @@ const Retos = () => {
                             completarReto(reto.id)
                           }
                           className={`
-                            min-w-[38px]
-                            h-[38px]
-                            flex-shrink-0
-                            rounded-full
-                            flex
-                            items-center
-                            justify-center
-                            text-white
-                            text-lg
-                            transition-all
-                            duration-300
-                            ${
-                              reto.completado
-                                ? "bg-[#37B24D]"
-                                : "bg-[#B7DDA6]"
-                            }
-                          `}
+                          min-w-[38px]
+                          h-[38px]
+                          flex-shrink-0
+                          rounded-full
+                          flex
+                          items-center
+                          justify-center
+                          text-white
+                          text-lg
+                          transition-all
+                          duration-300
+                          transform hover:scale-120
+                          hover:-translate-y-1
+                          ${
+                            reto.completado
+                              ? "bg-[#37B24D]"
+                              : "bg-[#B7DDA6]"
+                          }
+                        `}
                         >
                           ✓
                         </button>
@@ -363,25 +356,15 @@ const Retos = () => {
                             ? "Completado"
                             : "Pendiente"}
                         </span>
-
                       </div>
-
                     </div>
-
                   </div>
-
                 </div>
-
               ))}
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 };

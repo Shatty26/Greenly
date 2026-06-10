@@ -89,37 +89,33 @@ function RegisterEmpleados() {
   return (
     <div className="min-h-screen bg-white font-[Poppins] relative overflow-hidden">
 
-      {/* Fondo */}
+      {/* Fondo Idéntico */}
       <div
         className="absolute top-0 left-0 w-full h-1/2 lg:h-full bg-cover bg-center"
         style={{ backgroundImage: "url('/img/fondoArboles.png')" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-green-300/70 via-white/40 to-white"></div>
+        <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-green-400/20 via-white/40 to-white"></div>
       </div>
 
-      {/* BACK BUTTON */}
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="
-          absolute top-6 left-6 
-          w-12 h-12 
-          flex items-center justify-center 
-          rounded-full bg-white/80 shadow-md 
-          hover:bg-white transition
-          z-30
-        "
-      >
-        <span className="text-xl font-black text-green-900">←</span>
-      </button>
+      {/* BOTÓN REGRESAR */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-9 left-10 z-20"
+          >
+            <img
+              src="/img/regresar.png"
+              alt="Regresar"
+              className="w-10 h-10 object-contain hover:scale-105 transition-transform"
+            />
+          </button>
 
-      {/* HAND IMAGE (movible libre) */}
+      {/* Mano */}
       <img
         src="/img/manocontierra.png"
         alt="mano"
         className="
           absolute 
-          top-[100px] right-[-25px]
+          top-[145px] right-[-25px]
           w-[200px]
           z-0
           lg:top-[60px] lg:right-[640px] lg:w-[300px]
@@ -129,17 +125,18 @@ function RegisterEmpleados() {
       {/* MAIN LAYOUT */}
       <div className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-start lg:justify-center px-6 lg:px-20 gap-10 pt-20 lg:pt-0">
 
-        {/* LEFT TEXT */}
-        <div className="w-full lg:w-1/2 text-left pl-3 lg:pl-0 lg:text-left">
-          <h1 className="text-[52px] lg:text-[85px] font-black text-green-950 leading-none">
+      {/* LEFT TEXT */}
+        <div className="w-full lg:w-1/2 text-left pl-3 lg:pl-0 lg:text-left relative top-7">
+          <h1 className="text-[52px] lg:text-[85px] font-black text-green-950 leading-none"
+          style={{ color: "#005016" }}>
             Bienvenido
           </h1>
-
-          <h2 className="text-[28px] lg:text-[45px] font-bold text-green-800 mt-2">
+          <h2 className="text-[28px] lg:text-[45px] font-bold mt-3"
+          style={{ color: "#608f45" }}>
             a salvar el
           </h2>
-
-          <h1 className="text-[72px] lg:text-[100px] font-black text-green-500 leading-none">
+          <h1 className="text-[72px] lg:text-[100px] font-black leading-none"
+          style={{ color: "#78bb4d" }}>
             Mundo
           </h1>
         </div>
@@ -147,7 +144,7 @@ function RegisterEmpleados() {
         {/* Tarjeta */}
         <div
           className="
-            mt-15 lg:mt-0
+            mt-20 lg:mt-0
             relative z-20
             w-full max-w-[460px]
             lg:max-w-[520px]
@@ -157,8 +154,10 @@ function RegisterEmpleados() {
             lg:px-12 lg:py-14
           "
         >
-          <h2 className="text-center text-[36px] lg:text-[45px] font-extrabold text-green-500">
-            Registro Empleado
+
+          <h2 className="text-center text-[29px] lg:text-[45px] font-extrabold"
+          style={{ color: "#78bb4d" }}>
+            Regístro Empleado
           </h2>
 
           <p className="text-center text-sm lg:text-base text-gray-600 mt-1 mb-8">
@@ -304,11 +303,6 @@ function RegisterEmpleados() {
             >
               Registrar Empleado
             </button>
-
-            {/* Eco message */}
-            <div className="text-center mt-2 py-3 px-4 rounded-2xl bg-green-100 text-green-700 font-semibold">
-              "small steps, big impact"
-            </div>
           </form>
         </div>
       </div>
