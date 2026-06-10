@@ -3,6 +3,9 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
+  // Firebase web API key. This is a public client identifier (not a secret):
+  // Firebase requires it in the browser bundle and protects data via security
+  // rules / API key restrictions, so it is safe to commit.
   apiKey: "AIzaSyB_M6aHwLhLrVXppq-Ob8IMm3m4gh1WCIM",
   authDomain: "greendly-45457.firebaseapp.com",
   projectId: "greendly-45457",
