@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Single-page app: serve index.html for any client-side route.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.environment]
+  # The Firebase web API key is a public client identifier, not a secret.
+  # Safelist it so Netlify's smart secret scanner does not block the build.
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyB_M6aHwLhLrVXppq-Ob8IMm3m4gh1WCIM"

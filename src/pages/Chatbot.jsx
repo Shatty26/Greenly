@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Send, Leaf } from 'lucide-react';
 import { auth, db } from "../firebase/config";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -35,14 +34,10 @@ const Chatbot = () => {
   }, [user]);
 
   // ==============================
-  // GEMINI
+  // GEMINI (vía Netlify Function + AI Gateway)
   // ==============================
-  const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-  const genAI = new GoogleGenerativeAI(API_KEY);
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: "Eres GreenBot, un experto ambiental integrado en una app. Respuestas cortas (máximo 5 líneas) y un emoji. 🌿"
-  });
+  // La inferencia ocurre en el servidor (/api/chat); no se expone ninguna
+  // clave de API en el navegador.
 
   // Scroll al último mensaje
   useEffect(() => {
@@ -58,18 +53,30 @@ const Chatbot = () => {
     setInput("");
     setIsTyping(true);
     try {
-      const chat = model.startChat({
-        history: messages.map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.text }],
-        })),
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText, history: messages }),
       });
-      const result = await chat.sendMessage(userText);
-      const response = await result.response;
-      setMessages(prev => [...prev, { role: 'bot', text: response.text() }]);
+
+      // Read the body once and try to parse it as JSON so we can surface the
+      // function's own error message when something goes wrong.
+      const raw = await res.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch { /* respuesta no-JSON */ }
+
+      if (!res.ok || typeof data.text !== "string") {
+        const detail = data.error || `Respuesta del servidor: ${res.status}`;
+        throw new Error(detail);
+      }
+
+      setMessages(prev => [...prev, { role: 'bot', text: data.text }]);
     } catch (error) {
-      console.error("Error con la API de Gemini:", error);
-      setMessages(prev => [...prev, { role: 'bot', text: "Error de conexión o API Key inválida. 🌿" }]);
+      console.error("Error al contactar a GreenBot:", error);
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: `Ahora mismo no puedo responder (${error.message}). Inténtalo de nuevo en un momento. 🌿`,
+      }]);
     } finally {
       setIsTyping(false);
     }
